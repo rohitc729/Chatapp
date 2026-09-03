@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "397433493372",
+    "firebase_url": "https://hiichat-f2719-default-rtdb.firebaseio.com",
+    "project_id": "hiichat-f2719",
+    "storage_bucket": "hiichat-f2719.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:397433493372:android:265a6ae53d2e82b416f6f9",
+        "android_client_info": {
+          "package_name": "com.example.taskmanager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMLIF00WT7B5mSs2hpZyq3asZBd5Yj85A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:397433493372:android:301220ee265511ef16f6f9",
+        "android_client_info": {
+          "package_name": "com.rohitchauhan.hiichat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMLIF00WT7B5mSs2hpZyq3asZBd5Yj85A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:397433493372:android:ae586b69cf81a48516f6f9",
+        "android_client_info": {
+          "package_name": "com.rohitchauhan.webrtcvideocall"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMLIF00WT7B5mSs2hpZyq3asZBd5Yj85A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
