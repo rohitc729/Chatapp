@@ -1,4 +1,4 @@
-package com.rohitchauhan.hiichat.data.model
+package com.rohitchauhan.hiichat.data.remote.firebase.dto
 
 data class ChatModel(
     val chatId:String,

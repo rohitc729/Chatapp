@@ -69,6 +69,12 @@ dependencies {
     ksp("com.google.dagger:hilt-android-compiler:2.60")
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
 
+    // Supabase
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.storage)
+    implementation(libs.supabase.postgrest)
+    implementation(libs.ktor.client.android)
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

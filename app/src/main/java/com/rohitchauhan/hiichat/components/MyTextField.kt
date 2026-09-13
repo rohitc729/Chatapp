@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -30,37 +32,52 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyTextField(
-    modifier:Modifier = Modifier,
-    value :String,
-    onValueChange:(String)-> Unit,
-    keyboardOptions: KeyboardOptions= KeyboardOptions.Default,
+    modifier: Modifier = Modifier,
+    value: String,
+    onValueChange: (String) -> Unit,
     placeHolder: String,
-    trailingIcon:@Composable (()-> Unit)?=null,
-    onTIconClick:()-> Unit,
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    visualTransformation: VisualTransformation = VisualTransformation.None
+    leadingIcon:@Composable (()->Unit)?=null,
+    onLeadingIconClick:()->Unit,
+    shape: RoundedCornerShape,
+    containerColor: Color
+    // ... other params
 ) {
     BasicTextField(
-        modifier = modifier,
         value = value,
-        onValueChange = {onValueChange(it)},
-        keyboardOptions =keyboardOptions,
-        singleLine = true,
-        cursorBrush = SolidColor(Color(0xFF3A4EFB)),
+        onValueChange = onValueChange,
+        modifier = modifier.height(48.dp), // Set height to 48.dp
         textStyle = TextStyle(fontSize = 16.sp),
-        decorationBox = {innerTextField ->
+        singleLine = true,
+        decorationBox = { innerTextField ->
             TextFieldDefaults.DecorationBox(
                 value = value,
                 innerTextField = innerTextField,
                 enabled = true,
                 singleLine = true,
-                visualTransformation = visualTransformation,
-                interactionSource = interactionSource,
-                placeholder = { Text(placeHolder) },
-                trailingIcon = trailingIcon
+                visualTransformation = VisualTransformation.None,
+                interactionSource = remember { MutableInteractionSource() },
+                placeholder = { Text(placeHolder, fontSize = 16.sp) },
+                leadingIcon = leadingIcon,
+                // KEY: Set vertical padding to 0.dp so it doesn't "spoil" the text
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                container = {
+                    // This creates the background box you see in a normal TextField
+                    TextFieldDefaults.ContainerBox(
+                        enabled = true,
+                        isError = false,
+                        interactionSource = remember { MutableInteractionSource() },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = containerColor,
+                            unfocusedContainerColor = containerColor,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        shape = shape
+                    )
+                }
             )
         }
     )

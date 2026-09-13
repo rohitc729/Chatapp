@@ -12,15 +12,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
+import com.rohitchauhan.hiichat.ui.screens.MainScreen
 import com.rohitchauhan.hiichat.ui.screens.SignInScreen
 import com.rohitchauhan.hiichat.ui.screens.SignupScreen
 import com.rohitchauhan.hiichat.ui.screens.SplashScreen
 import com.rohitchauhan.hiichat.ui.viewmodel.SplashScreenVM
 
 @Composable
-fun AppNavigation(modifier: Modifier = Modifier) {
+fun AppNavigation() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = RootGraph.AuthGraph,modifier=modifier) {
+    NavHost(navController = navController, startDestination = RootGraph.AuthGraph) {
         authGraph(navController)
         mainGraph(navController)
     }
@@ -46,17 +47,24 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController) {
             }
         }
         composable<AuthRouts.SignupRout>() {
-            SignupScreen{
-                navController.navigate(AuthRouts.LoginRout){
-                    popUpTo(AuthRouts.LoginRout){inclusive=false}
+            SignupScreen(
+                gotoMainScreen = {
+                    navController.navigate(RootGraph.MainGraph){
+                        popUpTo(RootGraph.AuthGraph){inclusive=true}
+                    }
+                },
+                gotoSignInScreen = {
+                    navController.navigate(AuthRouts.LoginRout){
+                        popUpTo(AuthRouts.LoginRout){inclusive=false}
+                    }
                 }
-            }
+            )
         }
     }
 }
 
 private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
-    navigation<RootGraph.MainGraph>(startDestination = MainRouts.ChatListRout) {
-        composable<MainRouts.ChatListRout> { }
+    navigation<RootGraph.MainGraph>(startDestination = MainRouts.MainScreen) {
+        composable<MainRouts.MainScreen> { MainScreen() }
     }
 }

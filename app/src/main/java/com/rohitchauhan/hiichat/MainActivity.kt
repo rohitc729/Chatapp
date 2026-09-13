@@ -22,9 +22,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             HiiChatTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    AppNavigation(modifier = Modifier.fillMaxSize().padding(innerPadding))
-                }
+                    AppNavigation()
+
             }
         }
     }

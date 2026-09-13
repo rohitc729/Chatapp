@@ -19,6 +19,15 @@ sealed class AuthRouts{
 }
 sealed class MainRouts{
     @Serializable
-    object ChatListRout: MainRouts()
+    object MainScreen: MainRouts()
+}
+@Serializable
+sealed class SubRouts(val rout:String){
+    @Serializable
+    object ChatListRout: SubRouts("chat_list_rout")
+ @Serializable
+    object CallRout: SubRouts("call_list_rout")
+ @Serializable
+    object ProfileRout: SubRouts("profile_rout")
 
 }

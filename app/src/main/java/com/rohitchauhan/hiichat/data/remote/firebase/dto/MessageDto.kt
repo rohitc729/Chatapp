@@ -1,6 +1,6 @@
-package com.rohitchauhan.hiichat.data.model
+package com.rohitchauhan.hiichat.data.remote.firebase.dto
 
-data class MessageModel(
+data class MessageDto(
     val messageId:String="",
     val senderId:String="",
     val receiverId:String="",

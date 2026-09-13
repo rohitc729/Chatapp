@@ -1,5 +1,6 @@
 package com.rohitchauhan.hiichat.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -27,12 +28,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -42,17 +49,43 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rohitchauhan.hiichat.R
+import com.rohitchauhan.hiichat.ui.viewmodel.SignupEvent
 import com.rohitchauhan.hiichat.ui.viewmodel.SignupScreenVM
 
 @Composable
 fun SignupScreen(
-    gotoSignInScreen: () -> Unit
+    gotoSignInScreen: () -> Unit,
+    gotoMainScreen: () -> Unit,
 ) {
+    val viewModel: SignupScreenVM = hiltViewModel()
+    val signUpstate = viewModel.signUpState.collectAsState().value
+    val context = LocalContext.current
+
+    var isLoading by rememberSaveable { mutableStateOf(false) }
+
+
+    LaunchedEffect(Unit) {
+            viewModel.signupEvent.collect { signUpEvent ->
+                when(signUpEvent) {
+                    SignupEvent.NavigateToHome -> {
+                        gotoMainScreen()
+                        isLoading = false
+                    }
+
+                    is SignupEvent.ShowError -> {
+                        Toast.makeText(context, signUpEvent.message, Toast.LENGTH_SHORT).show()
+                        isLoading = false
+                    }
+
+                    is SignupEvent.isLoading -> {
+                        isLoading = true
+                    }
+                }
+            }
+
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-
-        val viewModel: SignupScreenVM = hiltViewModel()
-        val signUpstate = viewModel.signUpState.collectAsState().value
-
         //top left blur blue box
         Canvas(modifier = Modifier.fillMaxSize())
         {
@@ -93,60 +126,33 @@ fun SignupScreen(
                 modifier = Modifier.padding(top = 16.dp)
             )
             Text("Create your HiiChat account", color = Color.Gray)
-            // Row for First and Last Name
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .padding(top = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                //first name column
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("First name*")
-                    Card(
-                        elevation = CardDefaults.cardElevation(1.dp),
-                    ) {
-                        TextField(
-                            value = signUpstate.firstName,
-                            onValueChange = {
-                                viewModel.onFirstNameChanged(it)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            placeholder = { Text("First name") },
-                            singleLine = true
-                        )
-                    }
-                }
-                //last name column
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Last name*")
-                    Card(
-                        elevation = CardDefaults.cardElevation(1.dp)
-                    ) {
-                        TextField(
-                            value = signUpstate.firstName,
-                            onValueChange = {
-                                viewModel.onLastNameChanged(it)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            placeholder = { Text("Last name") },
-                            singleLine = true
-                        )
-                    }
+            //Name text field
+            Column (modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)){
+                Text("Name*")
+                Card(
+                    elevation = CardDefaults.cardElevation(1.dp)
+                ) {
+                    TextField(
+                        value = signUpstate.name,
+                        onValueChange = { viewModel.onNameChanged(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        singleLine = true,
+                        placeholder = { Text("Name") }
+                    )
                 }
             }
-            Column (modifier = Modifier.fillMaxWidth().padding(top = 12.dp)){
+
+            Column (modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)){
                 Text("Email*")
                 Card(
                     elevation = CardDefaults.cardElevation(1.dp)
@@ -168,8 +174,9 @@ fun SignupScreen(
                 }
             }
             Row(
-                modifier = Modifier.fillMaxWidth()
-                    .padding(top=12.dp, bottom = 24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp, bottom = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -239,7 +246,7 @@ fun SignupScreen(
                     .fillMaxWidth()
                     .height(48.dp),
                 onClick = {
-
+                   viewModel.signUp()
                 },
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -261,7 +268,8 @@ fun SignupScreen(
             }
             //continue with Google button
             Button(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .height(48.dp),
                 onClick = {},
                 colors = ButtonDefaults.buttonColors(

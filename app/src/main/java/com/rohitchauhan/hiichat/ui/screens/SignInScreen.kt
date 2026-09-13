@@ -102,7 +102,7 @@ fun SignInScreen(
                 modifier = Modifier.padding(top = 16.dp)
             )
             Text(
-                "Sign in to connect to your friends\nwith HiiChat",
+                "Sign in to connect to your friends\nwith HiiChat \uFE0F",
                 textAlign = TextAlign.Center,
                 fontFamily = FontFamily.SansSerif,
                 fontSize = 14.sp,

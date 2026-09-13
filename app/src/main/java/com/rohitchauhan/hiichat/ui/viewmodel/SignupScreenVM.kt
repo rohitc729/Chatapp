@@ -2,19 +2,25 @@ package com.rohitchauhan.hiichat.ui.viewmodel
 
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.rohitchauhan.hiichat.domain.use_case.SignUpUC
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SignupScreenVM @Inject constructor(
-
+    private val signUpUC: SignUpUC
 ) : ViewModel() {
     private val _signUpState = MutableStateFlow(SignUpState())
     val signUpState = _signUpState.asStateFlow()
 
-
+    private val _signupEvent = MutableSharedFlow<SignupEvent>() // No initial value needed
+    val signupEvent = _signupEvent.asSharedFlow()
     fun onEmailTextChanged(email: String){
         _signUpState.value = _signUpState.value.copy(email = email)
     }
@@ -22,29 +28,50 @@ class SignupScreenVM @Inject constructor(
         _signUpState.value = _signUpState.value.copy(password = password)
     }
 
-    fun onFirstNameChanged(firstName: String) {
-        _signUpState.value = _signUpState.value.copy(firstName = firstName)
+    fun onNameChanged(name: String) {
+        _signUpState.value = _signUpState.value.copy(name = name)
     }
-    fun onLastNameChanged(lastName: String) {
-        _signUpState.value = _signUpState.value.copy(lastName = lastName)
-    }
+
 
     fun onConfirmPasswordChanged(confirmPassword: String) {
         _signUpState.value = _signUpState.value.copy(confirmPassword=confirmPassword)
     }
+    fun  signUp(){
+        viewModelScope.launch {
+            try {
+                _signupEvent.emit(SignupEvent.isLoading)
+                signUpUC(
+                    email = _signUpState.value.email,
+                    password = _signUpState.value.password,
+                    name = _signUpState.value.name,
+                    onSuccess = {
+                        viewModelScope.launch {
+                            _signupEvent.emit(SignupEvent.NavigateToHome)
+                        }
+                    },
+                    onFailure = {
+                        viewModelScope.launch {
+                            _signupEvent.emit(SignupEvent.ShowError(it.message.toString()))
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                _signupEvent.emit(SignupEvent.ShowError(e.message.toString()))
+            }
+        }
+    }
 }
 
 data class SignUpState(
-    var firstName:String="",
-    var lastName:String="",
+    var name: String="",
     var email: String = "",
     var password: String = "",
     var confirmPassword: String = "",
-    var isLoading: Boolean = false,
-    var errorMessage: String? = null
+    val isLoading: Boolean=false
 )
 
 sealed interface SignupEvent {
     data object NavigateToHome : SignupEvent
     data class ShowError(val message: String) : SignupEvent
+    data object isLoading : SignupEvent
 }
