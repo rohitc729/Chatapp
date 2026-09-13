@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
+import com.rohitchauhan.hiichat.ui.screens.ForgetPasswordScreen
 import com.rohitchauhan.hiichat.ui.screens.MainScreen
 import com.rohitchauhan.hiichat.ui.screens.SignInScreen
 import com.rohitchauhan.hiichat.ui.screens.SignupScreen
@@ -28,7 +29,7 @@ fun AppNavigation() {
 }
 
 private fun NavGraphBuilder.authGraph(navController: NavHostController) {
-    navigation<RootGraph.AuthGraph>(startDestination = AuthRouts.LoginRout) {
+    navigation<RootGraph.AuthGraph>(startDestination = AuthRouts.SplashRout) {
         composable<AuthRouts.SplashRout>() {
             val viewModel: SplashScreenVM = hiltViewModel()
             SplashScreen {
@@ -42,8 +43,23 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController) {
             }
         }
         composable<AuthRouts.LoginRout>() {
-            SignInScreen{
-                navController.navigate(AuthRouts.SignupRout)
+            SignInScreen(
+                gotoHomeScreen = {
+                    navController.navigate(RootGraph.MainGraph){
+                        popUpTo(RootGraph.AuthGraph){inclusive=true}
+                    }
+                },
+                gotoSignUpScreen = {
+                    navController.navigate(AuthRouts.SignupRout)
+                },
+                gotoForgetPasswordScreen = {
+                    navController.navigate(AuthRouts.ForgetPasswordRout)
+                }
+            )
+        }
+        composable < AuthRouts.ForgetPasswordRout>{
+            ForgetPasswordScreen{
+                navController.popBackStack()
             }
         }
         composable<AuthRouts.SignupRout>() {

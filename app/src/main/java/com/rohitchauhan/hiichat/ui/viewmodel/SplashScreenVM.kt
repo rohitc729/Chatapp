@@ -2,14 +2,15 @@ package com.rohitchauhan.hiichat.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.rohitchauhan.hiichat.data.remote.firebase.FirebaseService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class SplashScreenVM @Inject constructor(
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseService: FirebaseService
 ): ViewModel() {
     fun isLogged(): Boolean{
-        return firebaseAuth.currentUser?.uid!=null
+        return firebaseService.getCurrentUid()!=null
     }
 }

@@ -33,8 +33,9 @@ fun MainScreen() {
         },
         topBar = {
             MyTopBar(
-                onMoreClick = {},
-                onSearchClick = {},
+                onMoreClick = {
+
+                },
                 title = viewModel.topBarTitle.value
             )
         }

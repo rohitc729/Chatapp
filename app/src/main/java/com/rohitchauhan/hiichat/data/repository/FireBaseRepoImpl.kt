@@ -16,4 +16,33 @@ class FireBaseRepoImpl @Inject constructor(
     ) {
         firebaseService.signUpUser(email, password, name, onSuccess, onFailure)
     }
+
+    override fun signin(
+        email: String,
+        password: String,
+        onSuccess: (Boolean) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        firebaseService.signIn(email=email,password=password,onSuccess,onFailure)
+    }
+
+    override fun signOut() {
+       firebaseService.signOut()
+    }
+
+    override fun sendPasswordResetEmail(
+        email: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        firebaseService.sendPasswordResetEmail(email, onSuccess, onFailure)
+    }
+
+    override fun signInWithGoogle(
+        idToken: String,
+        onSuccess: (Boolean) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        firebaseService.signInWithGoogle(idToken, onSuccess, onFailure)
+    }
 }

@@ -16,6 +16,8 @@ sealed class AuthRouts{
     object LoginRout: AuthRouts()
     @Serializable
     object SignupRout: AuthRouts()
+    @Serializable
+    object ForgetPasswordRout: AuthRouts()
 }
 sealed class MainRouts{
     @Serializable

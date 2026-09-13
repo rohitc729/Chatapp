@@ -1,6 +1,7 @@
 package com.rohitchauhan.hiichat.data.remote.firebase
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.FirebaseDatabase
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
 import javax.inject.Inject
@@ -55,6 +56,51 @@ class FirebaseService @Inject constructor(
     fun signOut() {
         firebaseAuth.signOut()
     }
+    fun sendPasswordResetEmail(
+        email: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        if (email.isBlank()) {
+            onFailure(Exception("Email cannot be empty"))
+            return
+        }
 
+        FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                onFailure(exception)
+            }
+    }
+
+    fun signInWithGoogle(
+        idToken: String,
+        onSuccess: (Boolean) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        firebaseAuth.signInWithCredential(credential)
+            .addOnSuccessListener { authResult ->
+                val user = authResult.user
+                if (user != null) {
+                    firebaseDatabase.reference.child("users").child(user.uid).setValue(
+                        UserDto(
+                            id = user.uid,
+                            name = user.displayName ?: "",
+                            email = user.email ?: "",
+                        )
+                    ).addOnSuccessListener {
+                        onSuccess(true)
+                    }.addOnFailureListener {
+                        onFailure(it)
+                    }
+                }
+            }
+            .addOnFailureListener {
+                onFailure(it)
+            }
+    }
 
 }

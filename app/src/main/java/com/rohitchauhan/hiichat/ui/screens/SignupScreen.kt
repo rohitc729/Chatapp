@@ -21,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,10 +48,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.rohitchauhan.hiichat.R
 import com.rohitchauhan.hiichat.ui.viewmodel.SignupEvent
 import com.rohitchauhan.hiichat.ui.viewmodel.SignupScreenVM
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 @Composable
 fun SignupScreen(
@@ -60,29 +68,30 @@ fun SignupScreen(
     val viewModel: SignupScreenVM = hiltViewModel()
     val signUpstate = viewModel.signUpState.collectAsState().value
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val credentialManager = CredentialManager.create(context)
 
     var isLoading by rememberSaveable { mutableStateOf(false) }
 
 
     LaunchedEffect(Unit) {
-            viewModel.signupEvent.collect { signUpEvent ->
-                when(signUpEvent) {
-                    SignupEvent.NavigateToHome -> {
-                        gotoMainScreen()
-                        isLoading = false
-                    }
+        viewModel.signupEvent.collect { signUpEvent ->
+            when (signUpEvent) {
+                is SignupEvent.NavigateToHome -> {
+                    gotoMainScreen()
+                    isLoading = false
+                }
 
-                    is SignupEvent.ShowError -> {
-                        Toast.makeText(context, signUpEvent.message, Toast.LENGTH_SHORT).show()
-                        isLoading = false
-                    }
+                is SignupEvent.ShowError -> {
+                    Toast.makeText(context, signUpEvent.message, Toast.LENGTH_SHORT).show()
+                    isLoading = false
+                }
 
-                    is SignupEvent.isLoading -> {
-                        isLoading = true
-                    }
+                is SignupEvent.isLoading -> {
+                    isLoading = true
                 }
             }
-
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -127,9 +136,11 @@ fun SignupScreen(
             )
             Text("Create your HiiChat account", color = Color.Gray)
             //Name text field
-            Column (modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)){
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+            ) {
                 Text("Name*")
                 Card(
                     elevation = CardDefaults.cardElevation(1.dp)
@@ -149,10 +160,12 @@ fun SignupScreen(
                     )
                 }
             }
-
-            Column (modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)){
+            //password input
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+            ) {
                 Text("Email*")
                 Card(
                     elevation = CardDefaults.cardElevation(1.dp)
@@ -173,71 +186,29 @@ fun SignupScreen(
                     )
                 }
             }
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp, bottom = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(vertical = 12.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Password*")
-                    Card(
-                        elevation = CardDefaults.cardElevation(1.dp)
-                    ) {
-                        TextField(
-                            value = signUpstate.password,
-                            onValueChange = { viewModel.onPasswordTextChanged(it) },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = {}
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.outline_visibility_24),
-                                        contentDescription = "password trailing icon"
-                                    )
-                                }
-                            }
-                        )
-                    }
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Confirm Password*")
-                    Card(
-                        elevation = CardDefaults.cardElevation(1.dp)
-                    ) {
-                        TextField(
-                            value = signUpstate.confirmPassword,
-                            onValueChange = { viewModel.onConfirmPasswordChanged(it) },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = {}
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.outline_visibility_24),
-                                        contentDescription = "confirm password trailing icon"
-                                    )
-                                }
-                            }
-                        )
-                    }
+                Text("Password*")
+                Card(
+                    elevation = CardDefaults.cardElevation(1.dp)
+                ) {
+                    TextField(
+                        value = signUpstate.password,
+                        onValueChange = { viewModel.onPasswordTextChanged(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        placeholder = { Text("Password") }
+                    )
                 }
             }
             //signup button
@@ -246,14 +217,18 @@ fun SignupScreen(
                     .fillMaxWidth()
                     .height(48.dp),
                 onClick = {
-                   viewModel.signUp()
+                    viewModel.signUp()
                 },
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF3A4EFB)
                 )
             ) {
+                if(isLoading){
+                    CircularProgressIndicator()
+                }else{
                 Text("Sign up")
+                }
             }
             //or text
             Row(
@@ -271,7 +246,33 @@ fun SignupScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                onClick = {},
+                onClick = {
+                    val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
+                        .setFilterByAuthorizedAccounts(false)
+                        .setServerClientId(context.getString(R.string.default_web_client_id))
+                        .setAutoSelectEnabled(true)
+                        .build()
+
+                    val request: GetCredentialRequest = GetCredentialRequest.Builder()
+                        .addCredentialOption(googleIdOption)
+                        .build()
+
+                    scope.launch {
+                        try {
+                            val result = credentialManager.getCredential(
+                                request = request,
+                                context = context,
+                            )
+                            val credential = result.credential
+                            if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                viewModel.signInWithGoogle(googleIdTokenCredential.idToken)
+                            }
+                        } catch (e: Exception) {
+                            Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White
                 ),

@@ -21,7 +21,6 @@ import com.rohitchauhan.hiichat.R
 @Composable
 fun MyTopBar(
     title: String,
-    onSearchClick: () -> Unit = {},
     onMoreClick: () -> Unit = {}
 ) {
     TopAppBar(
@@ -35,12 +34,14 @@ fun MyTopBar(
         },
         // Icons on the right (Search, Settings)
         actions = {
-//            IconButton(onClick = onSearchClick) {
-//                Icon(Icons.Default.Search, contentDescription = "Search")
-//            }
-//            IconButton(onClick = onMoreClick) {
-//                Icon(Icons.Default.MoreVert, contentDescription = "More")
-//            }
+            IconButton(onClick = onMoreClick) {
+                Icon(
+                    painter = painterResource(R.drawable.menuicon),
+                    contentDescription = "menu",
+                    tint = Color.Black
+                )
+            }
+
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent, // Or your theme color

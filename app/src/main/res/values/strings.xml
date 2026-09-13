@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">HiiChat</string>
+    <string name="default_web_client_id">397433493372-iq47fgi602o19n2std8b6cngjjpls0bs.apps.googleusercontent.com</string>
 </resources>

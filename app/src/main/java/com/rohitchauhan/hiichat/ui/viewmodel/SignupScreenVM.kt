@@ -3,6 +3,7 @@ package com.rohitchauhan.hiichat.ui.viewmodel
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rohitchauhan.hiichat.domain.use_case.SignInWithGoogleUC
 import com.rohitchauhan.hiichat.domain.use_case.SignUpUC
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -14,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SignupScreenVM @Inject constructor(
-    private val signUpUC: SignUpUC
+    private val signUpUC: SignUpUC,
+    private val signInWithGoogleUC: SignInWithGoogleUC
 ) : ViewModel() {
     private val _signUpState = MutableStateFlow(SignUpState())
     val signUpState = _signUpState.asStateFlow()
@@ -33,9 +35,6 @@ class SignupScreenVM @Inject constructor(
     }
 
 
-    fun onConfirmPasswordChanged(confirmPassword: String) {
-        _signUpState.value = _signUpState.value.copy(confirmPassword=confirmPassword)
-    }
     fun  signUp(){
         viewModelScope.launch {
             try {
@@ -60,13 +59,35 @@ class SignupScreenVM @Inject constructor(
             }
         }
     }
+
+    fun signInWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            try {
+                _signupEvent.emit(SignupEvent.isLoading)
+                signInWithGoogleUC(
+                    idToken = idToken,
+                    onSuccess = {
+                        viewModelScope.launch {
+                            _signupEvent.emit(SignupEvent.NavigateToHome)
+                        }
+                    },
+                    onFailure = {
+                        viewModelScope.launch {
+                            _signupEvent.emit(SignupEvent.ShowError(it.message.toString()))
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                _signupEvent.emit(SignupEvent.ShowError(e.message.toString()))
+            }
+        }
+    }
 }
 
 data class SignUpState(
     var name: String="",
     var email: String = "",
     var password: String = "",
-    var confirmPassword: String = "",
     val isLoading: Boolean=false
 )
 
