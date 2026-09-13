@@ -1,8 +1,14 @@
 package com.rohitchauhan.hiichat.ui.viewmodel
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rohitchauhan.hiichat.R
 import com.rohitchauhan.hiichat.domain.use_case.SignInWithGoogleUC
 import com.rohitchauhan.hiichat.domain.use_case.SignUpUC
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +29,14 @@ class SignupScreenVM @Inject constructor(
 
     private val _signupEvent = MutableSharedFlow<SignupEvent>() // No initial value needed
     val signupEvent = _signupEvent.asSharedFlow()
+
+    var isPasswordVisible by  mutableStateOf(false)
+    val passwordTrailingIcon
+        get() = if (isPasswordVisible) R.drawable.outline_visibility_off_24 else R.drawable.outline_visibility_24
+    val passwordVisualTransformation
+        get() = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation()
+
+
     fun onEmailTextChanged(email: String){
         _signUpState.value = _signUpState.value.copy(email = email)
     }

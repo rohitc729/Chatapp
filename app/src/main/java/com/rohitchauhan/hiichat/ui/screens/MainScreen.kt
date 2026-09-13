@@ -4,6 +4,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -16,11 +20,16 @@ import com.rohitchauhan.hiichat.ui.screens.bnscreens.CallsScreen
 import com.rohitchauhan.hiichat.ui.screens.bnscreens.ChatListScreen
 import com.rohitchauhan.hiichat.ui.screens.bnscreens.ProfileScreen
 import com.rohitchauhan.hiichat.ui.viewmodel.MainScreenVM
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Text
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    onSignOut: () -> Unit = {}
+) {
     val subNavController = rememberNavController()
     val viewModel : MainScreenVM= hiltViewModel()
+    var showMenu by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -33,10 +42,22 @@ fun MainScreen() {
         },
         topBar = {
             MyTopBar(
+                title = viewModel.topBarTitle.value,
                 onMoreClick = {
-
+                    showMenu = true
                 },
-                title = viewModel.topBarTitle.value
+                showMenu = showMenu,
+                onDismissMenu = { showMenu = false },
+                menuContent = {
+                    DropdownMenuItem(
+                        text = { Text("Logout") },
+                        onClick = {
+                            showMenu = false
+                            viewModel.signOut()
+                            onSignOut()
+                        }
+                    )
+                }
             )
         }
     ) { innerPadding ->

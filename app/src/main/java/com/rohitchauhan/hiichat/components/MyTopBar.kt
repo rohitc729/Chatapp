@@ -1,6 +1,7 @@
 package com.rohitchauhan.hiichat.components
 
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,7 +22,10 @@ import com.rohitchauhan.hiichat.R
 @Composable
 fun MyTopBar(
     title: String,
-    onMoreClick: () -> Unit = {}
+    onMoreClick: () -> Unit = {},
+    showMenu: Boolean = false,
+    onDismissMenu: () -> Unit = {},
+    menuContent: @Composable ColumnScope.() -> Unit = {}
 ) {
     TopAppBar(
         title = {
@@ -41,6 +45,11 @@ fun MyTopBar(
                     tint = Color.Black
                 )
             }
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = onDismissMenu,
+                content = menuContent
+            )
 
         },
         colors = TopAppBarDefaults.topAppBarColors(

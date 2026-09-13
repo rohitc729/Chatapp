@@ -81,6 +81,14 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController) {
 
 private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
     navigation<RootGraph.MainGraph>(startDestination = MainRouts.MainScreen) {
-        composable<MainRouts.MainScreen> { MainScreen() }
+        composable<MainRouts.MainScreen> {
+            MainScreen(
+                onSignOut = {
+                    navController.navigate(AuthRouts.LoginRout) {
+                        popUpTo(RootGraph.MainGraph) { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }

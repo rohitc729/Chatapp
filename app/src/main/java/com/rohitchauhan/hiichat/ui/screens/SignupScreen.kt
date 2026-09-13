@@ -207,7 +207,15 @@ fun SignupScreen(
                         ),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        placeholder = { Text("Password") }
+                        placeholder = { Text("Password") },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {viewModel.isPasswordVisible=!viewModel.isPasswordVisible}
+                            ) {
+                                Icon(painter = painterResource(viewModel.passwordTrailingIcon), contentDescription = "password trailing icon")
+                            }
+                        },
+                        visualTransformation = viewModel.passwordVisualTransformation
                     )
                 }
             }
@@ -278,7 +286,8 @@ fun SignupScreen(
                 ),
                 shape = RoundedCornerShape(12.dp),
                 elevation = ButtonDefaults.buttonElevation(1.dp)
-            ) {
+            )
+            {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically

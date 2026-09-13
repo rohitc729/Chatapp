@@ -2,7 +2,6 @@ package com.rohitchauhan.hiichat.ui.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -10,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rohitchauhan.hiichat.R
 import com.rohitchauhan.hiichat.domain.use_case.SignInUC
+import com.rohitchauhan.hiichat.domain.use_case.SignInWithGoogleUC
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +20,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SignInScreenVM @Inject constructor(
-    private val signInUC: SignInUC
+    private val signInUC: SignInUC,
+    private val signInWithGoogleUC: SignInWithGoogleUC
 ): ViewModel() {
     private val _signInState = MutableStateFlow(SignInState())
     val signInState = _signInState.asStateFlow()
@@ -28,11 +29,10 @@ class SignInScreenVM @Inject constructor(
     val signInEvent = _signInEvent.asSharedFlow()
 
     var isPasswordVisible by  mutableStateOf(false)
-    val passwordTrailingIcon =
-        if (isPasswordVisible) R.drawable.outline_visibility_off_24 else R.drawable.outline_visibility_24
-    val passwordVisualTransformation =
-        if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation()
-
+    val passwordTrailingIcon
+        get() = if (isPasswordVisible) R.drawable.outline_visibility_off_24 else R.drawable.outline_visibility_24
+    val passwordVisualTransformation
+        get() = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation()
 
     fun onEmailTextChanged(email: String){
         _signInState.value = _signInState.value.copy(email = email)
@@ -48,6 +48,28 @@ class SignInScreenVM @Inject constructor(
                 signInUC(
                     email = signInState.value.email,
                     password = signInState.value.password,
+                    onSuccess = {
+                        viewModelScope.launch {
+                            _signInEvent.emit(SignInEvent.NavigateToHome)
+                        }
+                    },
+                    onFailure = {
+                        viewModelScope.launch {
+                            _signInEvent.emit(SignInEvent.ShowError(it.message.toString()))
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                _signInEvent.emit(SignInEvent.ShowError(e.message.toString()))
+            }
+        }
+    }
+    fun signInWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            try {
+                _signInEvent.emit(SignInEvent.isLoading)
+                signInWithGoogleUC(
+                    idToken = idToken,
                     onSuccess = {
                         viewModelScope.launch {
                             _signInEvent.emit(SignInEvent.NavigateToHome)
