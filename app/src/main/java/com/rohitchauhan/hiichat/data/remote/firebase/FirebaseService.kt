@@ -3,6 +3,7 @@ package com.rohitchauhan.hiichat.data.remote.firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.messaging.FirebaseMessaging
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
 import javax.inject.Inject
 
@@ -30,6 +31,7 @@ class FirebaseService @Inject constructor(
                         email = email,
                     )
                 ).addOnSuccessListener {
+                    updateFcmToken()
                     onSuccess(true)
                 }.addOnFailureListener {
                     onFailure(it)
@@ -48,7 +50,10 @@ class FirebaseService @Inject constructor(
         onFailure: (Exception) -> Unit
     ) {
         firebaseAuth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener { onSuccess(true) }
+            .addOnSuccessListener {
+                updateFcmToken()
+                onSuccess(true)
+            }
             .addOnFailureListener {onFailure(it)  }
     }
 
@@ -92,6 +97,7 @@ class FirebaseService @Inject constructor(
                             email = user.email ?: "",
                         )
                     ).addOnSuccessListener {
+                        updateFcmToken()
                         onSuccess(true)
                     }.addOnFailureListener {
                         onFailure(it)
@@ -101,6 +107,13 @@ class FirebaseService @Inject constructor(
             .addOnFailureListener {
                 onFailure(it)
             }
+    }
+
+    private fun updateFcmToken() {
+        val uid = getCurrentUid() ?: return
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+            firebaseDatabase.reference.child("users").child(uid).child("fcmToken").setValue(token)
+        }
     }
 
 }

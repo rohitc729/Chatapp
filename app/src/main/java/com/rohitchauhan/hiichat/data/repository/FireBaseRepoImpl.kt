@@ -45,4 +45,5 @@ class FireBaseRepoImpl @Inject constructor(
     ) {
         firebaseService.signInWithGoogle(idToken, onSuccess, onFailure)
     }
+
 }

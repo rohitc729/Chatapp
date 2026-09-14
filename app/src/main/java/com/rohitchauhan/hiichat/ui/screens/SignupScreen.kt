@@ -25,6 +25,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -111,6 +112,25 @@ fun SignupScreen(
                 ),
                 radius = radius,
                 center = Offset(0f, 0f)
+            )
+        }
+        //Bottom right blue blur box
+        Canvas(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val radius = with(density) { 220.dp.toPx() }
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFF5366FF).copy(alpha = 0.30f),
+                        Color(0xFF5366FF).copy(alpha = 0.15f),
+                        Color.Transparent
+                    ),
+                    center = Offset(size.width, size.height),
+                    radius = radius
+                ),
+                center = Offset(size.width, size.height),
+                radius = radius
             )
         }
         //main column
@@ -233,7 +253,10 @@ fun SignupScreen(
                 )
             ) {
                 if(isLoading){
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(36.dp)
+                    )
                 }else{
                 Text("Sign up")
                 }

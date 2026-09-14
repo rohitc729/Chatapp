@@ -43,8 +43,8 @@ class SignInScreenVM @Inject constructor(
 
     fun signIn() {
         viewModelScope.launch {
+            _signInEvent.emit(SignInEvent.isLoading)
             try {
-                _signInEvent.emit(SignInEvent.isLoading)
                 signInUC(
                     email = signInState.value.email,
                     password = signInState.value.password,

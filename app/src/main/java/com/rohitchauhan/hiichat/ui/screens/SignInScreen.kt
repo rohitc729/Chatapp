@@ -22,6 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -101,8 +102,7 @@ fun SignInScreen(
         //top left blue blur box
         Canvas(
             modifier = Modifier.fillMaxSize()
-        )
-        {
+        ) {
             val radius = with(density) { 220.dp.toPx() }
             drawCircle(
                 brush = Brush.radialGradient(
@@ -118,6 +118,27 @@ fun SignInScreen(
                 radius = radius
             )
         }
+
+        //Bottom right blue blur box
+        Canvas(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val radius = with(density) { 220.dp.toPx() }
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFF5366FF).copy(alpha = 0.30f),
+                        Color(0xFF5366FF).copy(alpha = 0.15f),
+                        Color.Transparent
+                    ),
+                    center = Offset(size.width, size.height),
+                    radius = radius
+                ),
+                center = Offset(size.width, size.height),
+                radius = radius
+            )
+        }
+
         //main column
         Column(
             modifier = Modifier
@@ -247,8 +268,9 @@ fun SignInScreen(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 Text(
                     "Forgot Password?",
-                    modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
-                        .clickable{
+                    modifier = Modifier
+                        .padding(top = 8.dp, bottom = 16.dp)
+                        .clickable {
                             gotoForgetPasswordScreen()
                         },
                     color = Color(0xFF3A4EFB)
@@ -267,7 +289,14 @@ fun SignInScreen(
                     containerColor = Color(0xFF3A4EFB)
                 )
             ) {
-                Text("Sign in")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(36.dp)
+                    )
+                } else {
+                    Text("Sign in")
+                }
             }
             //or text
             Row(
@@ -304,7 +333,8 @@ fun SignInScreen(
                             )
                             val credential = result.credential
                             if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                val googleIdTokenCredential =
+                                    GoogleIdTokenCredential.createFrom(credential.data)
                                 viewModel.signInWithGoogle(googleIdTokenCredential.idToken)
                             }
                         } catch (e: Exception) {
