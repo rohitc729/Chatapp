@@ -2,6 +2,7 @@ package com.rohitchauhan.hiichat.ui.screens
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,22 +22,28 @@ import com.rohitchauhan.hiichat.ui.screens.bnscreens.ChatListScreen
 import com.rohitchauhan.hiichat.ui.screens.bnscreens.ProfileScreen
 import com.rohitchauhan.hiichat.ui.viewmodel.MainScreenVM
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import com.rohitchauhan.hiichat.R
 
 @Composable
 fun MainScreen(
-    onSignOut: () -> Unit = {}
+    onSignOut: () -> Unit = {},
+    gotoAddChatScreen: () -> Unit = {}
 ) {
     val subNavController = rememberNavController()
-    val viewModel : MainScreenVM= hiltViewModel()
+    val viewModel: MainScreenVM = hiltViewModel()
     var showMenu by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             MyBottomBar(
                 subNavController,
-                onItemClick={
-                    viewModel.topBarTitle.value=it
+                onItemClick = {
+                    viewModel.topBarTitle.value = it
                 }
             )
         },
@@ -59,6 +66,21 @@ fun MainScreen(
                     )
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    gotoAddChatScreen()
+                },
+                shape = CircleShape,
+                contentColor = Color(0xFF001AFF)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.add),
+                    contentDescription = "add icon",
+                    tint = Color.White
+                )
+            }
         }
     ) { innerPadding ->
         NavHost(

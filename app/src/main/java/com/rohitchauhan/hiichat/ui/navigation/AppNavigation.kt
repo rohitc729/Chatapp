@@ -17,6 +17,7 @@ import com.rohitchauhan.hiichat.ui.screens.MainScreen
 import com.rohitchauhan.hiichat.ui.screens.SignInScreen
 import com.rohitchauhan.hiichat.ui.screens.SignupScreen
 import com.rohitchauhan.hiichat.ui.screens.SplashScreen
+import com.rohitchauhan.hiichat.ui.screens.bnscreens.AddChatScreen
 import com.rohitchauhan.hiichat.ui.viewmodel.SplashScreenVM
 
 @Composable
@@ -87,8 +88,14 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
                     navController.navigate(AuthRouts.LoginRout) {
                         popUpTo(RootGraph.MainGraph) { inclusive = true }
                     }
+                },
+                gotoAddChatScreen = {
+                    navController.navigate(MainRouts.AddChatScreen)
                 }
             )
+        }
+        composable < MainRouts.AddChatScreen>{
+            AddChatScreen()
         }
     }
 }

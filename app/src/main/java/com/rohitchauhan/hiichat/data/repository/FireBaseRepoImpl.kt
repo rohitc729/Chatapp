@@ -1,7 +1,9 @@
 package com.rohitchauhan.hiichat.data.repository
 
 import com.rohitchauhan.hiichat.data.remote.firebase.FirebaseService
+import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
 import com.rohitchauhan.hiichat.domain.repository.FirebaseRepo
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class FireBaseRepoImpl @Inject constructor(
@@ -44,6 +46,10 @@ class FireBaseRepoImpl @Inject constructor(
         onFailure: (Exception) -> Unit
     ) {
         firebaseService.signInWithGoogle(idToken, onSuccess, onFailure)
+    }
+
+    override fun getAllUsers(): Flow<List<UserDto>> {
+        return firebaseService.getAllUsers()
     }
 
 }

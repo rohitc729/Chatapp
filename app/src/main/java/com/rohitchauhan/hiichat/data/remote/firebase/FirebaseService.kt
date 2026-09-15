@@ -2,9 +2,15 @@ package com.rohitchauhan.hiichat.data.remote.firebase
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.messaging.FirebaseMessaging
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import javax.inject.Inject
 
 class FirebaseService @Inject constructor(
@@ -109,6 +115,29 @@ class FirebaseService @Inject constructor(
             }
     }
 
+    fun getAllUsers(): Flow<List<UserDto>> = callbackFlow {
+        val usersRef = firebaseDatabase.reference.child("users")
+        val usersListener =  object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val users = mutableListOf<UserDto>()
+                for (userSnapshot in snapshot.children) {
+                    val user = userSnapshot.getValue(UserDto::class.java)
+                    if (user != null && user.id!=getCurrentUid()) {
+                        users.add(user)
+                    }
+                }
+                trySend(users)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+               close(error.toException())
+            }
+        }
+        usersRef.addValueEventListener(usersListener)
+        awaitClose {
+            usersRef.removeEventListener(usersListener)
+        }
+    }
     private fun updateFcmToken() {
         val uid = getCurrentUid() ?: return
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
