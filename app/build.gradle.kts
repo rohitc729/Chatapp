@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(libs.firebase.messaging)
     implementation(libs.googleid)
+    implementation(libs.androidx.material.icons.extended)
     //serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     //room database

@@ -1,11 +1,7 @@
 package com.rohitchauhan.hiichat.ui.navigation
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusModifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -17,8 +13,11 @@ import com.rohitchauhan.hiichat.ui.screens.MainScreen
 import com.rohitchauhan.hiichat.ui.screens.SignInScreen
 import com.rohitchauhan.hiichat.ui.screens.SignupScreen
 import com.rohitchauhan.hiichat.ui.screens.SplashScreen
-import com.rohitchauhan.hiichat.ui.screens.bnscreens.AddChatScreen
+import com.rohitchauhan.hiichat.ui.screens.AddChatScreen
+import com.rohitchauhan.hiichat.ui.screens.ChatDetailScreen
 import com.rohitchauhan.hiichat.ui.viewmodel.SplashScreenVM
+import androidx.navigation.toRoute
+
 
 @Composable
 fun AppNavigation() {
@@ -84,6 +83,7 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
     navigation<RootGraph.MainGraph>(startDestination = MainRouts.MainScreen) {
         composable<MainRouts.MainScreen> {
             MainScreen(
+                navController = navController,
                 onSignOut = {
                     navController.navigate(AuthRouts.LoginRout) {
                         popUpTo(RootGraph.MainGraph) { inclusive = true }
@@ -95,7 +95,22 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
             )
         }
         composable < MainRouts.AddChatScreen>{
-            AddChatScreen()
+            AddChatScreen(
+                onUserClick = { chatId, otherUserId, otherUserName ->
+                    navController.navigate(MainRouts.ChatDetailScreen(chatId, otherUserId, otherUserName))
+                }
+            )
+        }
+        composable<MainRouts.ChatDetailScreen> { backStackEntry ->
+            val chatDetail: MainRouts.ChatDetailScreen = backStackEntry.toRoute()
+            ChatDetailScreen(
+                chatId = chatDetail.chatId,
+                otherUserId = chatDetail.otherUserId,
+                otherUserName = chatDetail.otherUserName,
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

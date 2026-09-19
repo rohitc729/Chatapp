@@ -24,6 +24,12 @@ sealed class MainRouts{
     object MainScreen: MainRouts()
     @Serializable
     object AddChatScreen: MainRouts()
+    @Serializable
+    data class ChatDetailScreen(
+        val chatId: String,
+        val otherUserId: String,
+        val otherUserName: String
+    ): MainRouts()
 }
 @Serializable
 sealed class SubRouts(val rout:String){

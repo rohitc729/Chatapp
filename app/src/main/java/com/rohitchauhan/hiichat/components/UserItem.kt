@@ -1,5 +1,6 @@
 package com.rohitchauhan.hiichat.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,11 +24,15 @@ import com.rohitchauhan.hiichat.R
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
 
 @Composable
-fun UserItem(user: UserDto) {
+fun UserItem(
+    user: UserDto,
+    onClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(8.dp)
+            .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

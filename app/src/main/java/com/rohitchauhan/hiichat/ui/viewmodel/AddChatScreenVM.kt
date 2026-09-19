@@ -2,6 +2,7 @@ package com.rohitchauhan.hiichat.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rohitchauhan.hiichat.data.remote.firebase.FirebaseService
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
 import com.rohitchauhan.hiichat.domain.use_case.GetAllUserUC
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,8 +17,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddChatScreenVM @Inject constructor(
-    private val getAllUserUC: GetAllUserUC
+    private val getAllUserUC: GetAllUserUC,
+    private val firebaseService: FirebaseService
 ) : ViewModel() {
+
+    fun getChatId(otherUserId: String) = firebaseService.getChatId(otherUserId)
+
 
     private val _getAllUsersState = MutableStateFlow<GetAllUsersState>(GetAllUsersState.Loading)
     val getAllUsersState = _getAllUsersState.asStateFlow()

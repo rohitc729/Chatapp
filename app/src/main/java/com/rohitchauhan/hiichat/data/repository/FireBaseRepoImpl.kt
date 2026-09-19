@@ -1,6 +1,8 @@
 package com.rohitchauhan.hiichat.data.repository
 
 import com.rohitchauhan.hiichat.data.remote.firebase.FirebaseService
+import com.rohitchauhan.hiichat.data.remote.firebase.dto.ChatModel
+import com.rohitchauhan.hiichat.data.remote.firebase.dto.MessageDto
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
 import com.rohitchauhan.hiichat.domain.repository.FirebaseRepo
 import kotlinx.coroutines.flow.Flow
@@ -50,6 +52,26 @@ class FireBaseRepoImpl @Inject constructor(
 
     override fun getAllUsers(): Flow<List<UserDto>> {
         return firebaseService.getAllUsers()
+    }
+
+    override fun getUserById(uid: String): Flow<UserDto?> {
+        return firebaseService.getUserById(uid)
+    }
+
+    override fun sendMessage(
+        message: MessageDto,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        firebaseService.sendMessage(message, onSuccess, onFailure)
+    }
+
+    override fun getMessages(chatId: String): Flow<List<MessageDto>> {
+        return firebaseService.getMessages(chatId)
+    }
+
+    override fun getUserChats(): Flow<List<ChatModel>> {
+        return firebaseService.getUserChats()
     }
 
 }

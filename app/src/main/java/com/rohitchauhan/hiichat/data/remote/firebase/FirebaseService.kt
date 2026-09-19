@@ -7,10 +7,13 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.messaging.FirebaseMessaging
+import com.rohitchauhan.hiichat.data.remote.firebase.dto.ChatModel
+import com.rohitchauhan.hiichat.data.remote.firebase.dto.MessageDto
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class FirebaseService @Inject constructor(
@@ -19,6 +22,11 @@ class FirebaseService @Inject constructor(
 ) {
     //1. Current user id
     fun getCurrentUid(): String? = firebaseAuth.currentUser?.uid
+
+    fun getChatId(otherUserId: String): String {
+        val myUid = getCurrentUid() ?: ""
+        return if (myUid < otherUserId) "${myUid}_$otherUserId" else "${otherUserId}_$myUid"
+    }
 
     //2. Signup user
     fun signUpUser(
@@ -138,6 +146,114 @@ class FirebaseService @Inject constructor(
             usersRef.removeEventListener(usersListener)
         }
     }
+
+    fun getUserById(uid: String): Flow<UserDto?> = callbackFlow {
+        val userRef = firebaseDatabase.reference.child("users").child(uid)
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                trySend(snapshot.getValue(UserDto::class.java))
+            }
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        userRef.addValueEventListener(listener)
+        awaitClose { userRef.removeEventListener(listener) }
+    }
+
+    //send a message to a user
+    fun sendMessage(
+        message: MessageDto,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val chatId = message.chatId
+        val messageId = firebaseDatabase.reference.child("messages").child(chatId).push().key ?: return
+        val finalMessage = message.copy(messageId = messageId)
+
+        val updates = hashMapOf<String, Any>()
+        // 1. Add message to history
+        updates["/messages/$chatId/$messageId"] = finalMessage
+        
+        // 2. Update chat metadata
+        updates["/chats/$chatId/lastMessage"] = finalMessage.messageText
+        updates["/chats/$chatId/lastMessageSenderId"] = finalMessage.senderId
+        updates["/chats/$chatId/lastTimestamp"] = finalMessage.timeStamp
+        updates["/chats/$chatId/chatId"] = chatId
+        updates["/chats/$chatId/members"] = listOf(finalMessage.senderId, finalMessage.receiverId)
+        
+        // 3. Update index for both users
+        updates["/user_chats/${finalMessage.senderId}/$chatId"] = true
+        updates["/user_chats/${finalMessage.receiverId}/$chatId"] = true
+
+        firebaseDatabase.reference.updateChildren(updates)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { onFailure(it) }
+    }
+
+    fun getMessages(chatId: String): Flow<List<MessageDto>> = callbackFlow {
+        val messagesRef = firebaseDatabase.reference.child("messages").child(chatId)
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val messages = snapshot.children.mapNotNull { it.getValue(MessageDto::class.java) }
+                trySend(messages)
+            }
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        messagesRef.addValueEventListener(listener)
+        awaitClose { messagesRef.removeEventListener(listener) }
+    }
+
+    fun getUserChats(): Flow<List<ChatModel>> = callbackFlow {
+        val uid = getCurrentUid() ?: run {
+            close(Exception("User not logged in"))
+            return@callbackFlow
+        }
+        val userChatsRef = firebaseDatabase.reference.child("user_chats").child(uid)
+        
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val chatIds = snapshot.children.mapNotNull { it.key }
+                if (chatIds.isEmpty()) {
+                    trySend(emptyList())
+                    return
+                }
+
+                val chats = mutableListOf<ChatModel>()
+                var processedCount = 0
+                
+                chatIds.forEach { chatId ->
+                    firebaseDatabase.reference.child("chats").child(chatId)
+                        .addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(chatSnapshot: DataSnapshot) {
+                                chatSnapshot.getValue(ChatModel::class.java)?.let { chats.add(it) }
+                                processedCount++
+                                if (processedCount == chatIds.size) {
+                                    trySend(chats.sortedByDescending { it.lastTimestamp })
+                                }
+                            }
+                            override fun onCancelled(error: DatabaseError) {
+                                // Log or handle partial failure
+                                processedCount++
+                                if (processedCount == chatIds.size) {
+                                    trySend(chats.sortedByDescending { it.lastTimestamp })
+                                }
+                            }
+                        })
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        
+        userChatsRef.addValueEventListener(listener)
+        awaitClose { userChatsRef.removeEventListener(listener) }
+    }
+
     private fun updateFcmToken() {
         val uid = getCurrentUid() ?: return
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->

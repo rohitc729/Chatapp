@@ -28,9 +28,12 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import com.rohitchauhan.hiichat.R
+import androidx.navigation.NavHostController
+import com.rohitchauhan.hiichat.ui.navigation.MainRouts
 
 @Composable
 fun MainScreen(
+    navController: NavHostController,
     onSignOut: () -> Unit = {},
     gotoAddChatScreen: () -> Unit = {}
 ) {
@@ -88,7 +91,15 @@ fun MainScreen(
             startDestination = SubRouts.ChatListRout.rout,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(SubRouts.ChatListRout.rout) { ChatListScreen() }
+            composable(SubRouts.ChatListRout.rout) {
+                ChatListScreen(
+                    onChatClick = { chatId, otherUserId, otherUserName ->
+                        navController.navigate(
+                            MainRouts.ChatDetailScreen(chatId, otherUserId, otherUserName)
+                        )
+                    }
+                )
+            }
             composable(SubRouts.CallRout.rout) { CallsScreen() }
             composable(SubRouts.ProfileRout.rout) { ProfileScreen() }
         }
