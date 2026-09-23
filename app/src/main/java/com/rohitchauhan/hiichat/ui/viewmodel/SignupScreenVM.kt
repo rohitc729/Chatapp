@@ -1,6 +1,7 @@
 package com.rohitchauhan.hiichat.ui.viewmodel
 
-import androidx.compose.runtime.Composable
+import android.content.Context
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -30,33 +31,51 @@ class SignupScreenVM @Inject constructor(
     private val _signupEvent = MutableSharedFlow<SignupEvent>() // No initial value needed
     val signupEvent = _signupEvent.asSharedFlow()
 
-    var isPasswordVisible by  mutableStateOf(false)
+    var isPasswordVisible by mutableStateOf(false)
     val passwordTrailingIcon
         get() = if (isPasswordVisible) R.drawable.outline_visibility_off_24 else R.drawable.outline_visibility_24
     val passwordVisualTransformation
         get() = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation()
 
 
-    fun onEmailTextChanged(email: String){
+    fun onEmailTextChanged(email: String) {
         _signUpState.value = _signUpState.value.copy(email = email)
     }
-    fun onPasswordTextChanged(password: String){
-        _signUpState.value = _signUpState.value.copy(password = password)
+
+    fun onPasswordTextChanged(password: String) {
+        _signUpState.value = _signUpState.value.copy(
+            password = password,
+            passwordError = false,
+            passwordErrorMessage = null
+        )
     }
 
     fun onNameChanged(name: String) {
         _signUpState.value = _signUpState.value.copy(name = name)
     }
 
+    fun onProfileImageSelected(uri: Uri?) {
+        _signUpState.value = _signUpState.value.copy(profileImg = uri)
+    }
 
-    fun  signUp(){
+    fun setPasswordError(isError: Boolean, message: String?) {
+        _signUpState.value = _signUpState.value.copy(
+            passwordError = isError,
+            passwordErrorMessage = message
+        )
+    }
+
+
+    fun signUp(context: Context) {
         viewModelScope.launch {
             try {
                 _signupEvent.emit(SignupEvent.isLoading)
                 signUpUC(
+                    context = context,
                     email = _signUpState.value.email,
                     password = _signUpState.value.password,
                     name = _signUpState.value.name,
+                    imageUri = _signUpState.value.profileImg,
                     onSuccess = {
                         viewModelScope.launch {
                             _signupEvent.emit(SignupEvent.NavigateToHome)
@@ -64,12 +83,12 @@ class SignupScreenVM @Inject constructor(
                     },
                     onFailure = {
                         viewModelScope.launch {
-                            _signupEvent.emit(SignupEvent.ShowError(it.message.toString()))
+                            _signupEvent.emit(SignupEvent.ShowError(it))
                         }
                     }
                 )
             } catch (e: Exception) {
-                _signupEvent.emit(SignupEvent.ShowError(e.message.toString()))
+                _signupEvent.emit(SignupEvent.ShowError(e))
             }
         }
     }
@@ -78,35 +97,42 @@ class SignupScreenVM @Inject constructor(
         viewModelScope.launch {
             try {
                 _signupEvent.emit(SignupEvent.isLoading)
-                signInWithGoogleUC(
-                    idToken = idToken,
-                    onSuccess = {
-                        viewModelScope.launch {
-                            _signupEvent.emit(SignupEvent.NavigateToHome)
-                        }
-                    },
-                    onFailure = {
-                        viewModelScope.launch {
-                            _signupEvent.emit(SignupEvent.ShowError(it.message.toString()))
-                        }
-                    }
-                )
+                signInWithGoogleNav(idToken)
             } catch (e: Exception) {
-                _signupEvent.emit(SignupEvent.ShowError(e.message.toString()))
+                _signupEvent.emit(SignupEvent.ShowError(e))
             }
         }
+    }
+
+    private suspend fun signInWithGoogleNav(idToken: String) {
+        signInWithGoogleUC(
+            idToken = idToken,
+            onSuccess = {
+                viewModelScope.launch {
+                    _signupEvent.emit(SignupEvent.NavigateToHome)
+                }
+            },
+            onFailure = {
+                viewModelScope.launch {
+                    _signupEvent.emit(SignupEvent.ShowError(it))
+                }
+            }
+        )
     }
 }
 
 data class SignUpState(
-    var name: String="",
+    var name: String = "",
     var email: String = "",
     var password: String = "",
-    val isLoading: Boolean=false
+    var profileImg: Uri? = null,
+    val isLoading: Boolean = false,
+    val passwordError: Boolean = false,
+    val passwordErrorMessage: String? = null
 )
 
 sealed interface SignupEvent {
     data object NavigateToHome : SignupEvent
-    data class ShowError(val message: String) : SignupEvent
+    data class ShowError(val exception: Exception) : SignupEvent
     data object isLoading : SignupEvent
 }

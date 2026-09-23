@@ -1,5 +1,7 @@
 package com.rohitchauhan.hiichat.domain.use_case
 
+import android.content.Context
+import android.net.Uri
 import com.rohitchauhan.hiichat.domain.repository.FirebaseRepo
 import javax.inject.Inject
 
@@ -7,9 +9,11 @@ class SignUpUC @Inject constructor(
     private val firebaseRepo: FirebaseRepo
 ) {
     operator fun invoke(
+        context: Context,
         email: String,
         password: String,
         name: String,
+        imageUri: Uri?,
         onSuccess: (Boolean) -> Unit,
         onFailure: (Exception) -> Unit
     ){
@@ -20,9 +24,11 @@ class SignUpUC @Inject constructor(
         }
         else {
             firebaseRepo.signUp(
+                context = context,
                 email = email,
                 password = password,
                 name = name,
+                imageUri = imageUri,
                 onSuccess = onSuccess,
                 onFailure = onFailure
             )

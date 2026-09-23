@@ -73,7 +73,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import coil3.compose.AsyncImage
 import com.rohitchauhan.hiichat.components.MyTextField
+import com.rohitchauhan.hiichat.domain.use_case.PasswordException
 import com.rohitchauhan.hiichat.ui.theme.appFont
+import kotlinx.coroutines.flow.produceIn
 
 @Composable
 fun SignupScreen(
@@ -85,12 +87,11 @@ fun SignupScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val credentialManager = CredentialManager.create(context)
-
     var isLoading by rememberSaveable { mutableStateOf(false) }
-    var selectedImageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
-    val imageLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia()){uri->
-        selectedImageUri = uri
-    }
+    val imageLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia()) { uri ->
+            viewModel.onProfileImageSelected(uri)
+        }
 
     LaunchedEffect(Unit) {
         viewModel.signupEvent.collect { signUpEvent ->
@@ -101,7 +102,19 @@ fun SignupScreen(
                 }
 
                 is SignupEvent.ShowError -> {
-                    Toast.makeText(context, signUpEvent.message, Toast.LENGTH_SHORT).show()
+                    when (signUpEvent.exception) {
+                        is PasswordException -> {
+                            viewModel.setPasswordError(true, signUpEvent.exception.localizedMessage)
+                        }
+
+                        is Exception -> {
+                            Toast.makeText(
+                                context,
+                                signUpEvent.exception.message,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                     isLoading = false
                 }
 
@@ -166,47 +179,55 @@ fun SignupScreen(
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 16.dp)
             )
-            Text("Create your HiiChat account", color = Color.Gray, fontFamily =appFont)
-             Box(
-                 modifier = Modifier.size(65.dp)
-                     .background(
-                         color=Color.LightGray,
-                         shape = CircleShape
-                     ),
-                 contentAlignment = Alignment.BottomEnd
-             ){
-                 AsyncImage(
-                     model = selectedImageUri,
-                     contentDescription = "profileimg",
-                     modifier = Modifier.fillMaxSize()
-                         .clip(CircleShape).padding(
-                             if(selectedImageUri==null) 4.dp else 0.dp
-                         )
-                     ,
-                     placeholder = painterResource(R.drawable.user_selected),
-                     fallback = painterResource(R.drawable.user_selected),
-                     contentScale = if(selectedImageUri!=null) ContentScale.Crop else ContentScale.Fit
-                 )
-                 IconButton(
-                     onClick = {
-                         imageLauncher.launch(
-                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                         )
-                     },
-                     modifier = Modifier.size(18.dp),
-                     colors = IconButtonDefaults.iconButtonColors(
-                         containerColor = Color(0xFF3A4EFB)
-                     )
-                 ) {
-                     Icon(painter = painterResource(R.drawable.add), contentDescription = "Add image", tint = Color.White,modifier=Modifier.size(12.dp))
-                 }
-             }
+            Text("Create your HiiChat account", color = Color.Gray, fontFamily = appFont)
+            Spacer(Modifier.height(16.dp))
+            Box(
+                modifier = Modifier
+                    .size(65.dp)
+                    .background(
+                        color = Color.LightGray,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                AsyncImage(
+                    model = signUpstate.profileImg,
+                    contentDescription = "profileimg",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .padding(
+                            if (signUpstate.profileImg == null) 4.dp else 0.dp
+                        ),
+                    placeholder = painterResource(R.drawable.user_selected),
+                    fallback = painterResource(R.drawable.user_selected),
+                    contentScale = if (signUpstate.profileImg != null) ContentScale.Crop else ContentScale.Fit
+                )
+                IconButton(
+                    onClick = {
+                        imageLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    modifier = Modifier.size(18.dp),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color(0xFF3A4EFB)
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.add),
+                        contentDescription = "Add image",
+                        tint = Color.White,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+            }
             //Name text field
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                Text("Name*", fontFamily =appFont)
+                Text("Name*", fontFamily = appFont)
                 Card(
                     elevation = CardDefaults.cardElevation(1.dp)
                 ) {
@@ -214,7 +235,7 @@ fun SignupScreen(
                         modifier = Modifier.fillMaxWidth(),
                         value = signUpstate.name,
                         onValueChange = {
-                            viewModel.onNameChanged(it      )
+                            viewModel.onNameChanged(it)
                         },
                         placeHolder = "Name",
                         shape = RoundedCornerShape(12.dp),
@@ -242,7 +263,7 @@ fun SignupScreen(
                         modifier = Modifier.fillMaxWidth(),
                         value = signUpstate.email,
                         onValueChange = {
-                            viewModel.onEmailTextChanged(it   )
+                            viewModel.onEmailTextChanged(it)
                         },
                         placeHolder = "Email",
                         shape = RoundedCornerShape(12.dp),
@@ -261,13 +282,16 @@ fun SignupScreen(
             ) {
                 Text("Password*", fontFamily = appFont)
                 Card(
-                    elevation = CardDefaults.cardElevation(1.dp)
+                    elevation = CardDefaults.cardElevation(1.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (signUpstate.passwordError) Color(0xFFFFEBEE) else Color.White
+                    )
                 ) {
                     MyTextField(
                         modifier = Modifier.fillMaxWidth(),
                         value = signUpstate.password,
                         onValueChange = {
-                            viewModel.onPasswordTextChanged(it      )
+                            viewModel.onPasswordTextChanged(it)
                         },
                         placeHolder = "Password",
                         shape = RoundedCornerShape(12.dp),
@@ -279,12 +303,25 @@ fun SignupScreen(
                         trailingIcon = {
                             IconButton(
                                 onClick = {
-                                    viewModel.isPasswordVisible=!viewModel.isPasswordVisible
+                                    viewModel.isPasswordVisible = !viewModel.isPasswordVisible
                                 }
                             ) {
-                                Icon(painter = painterResource(viewModel.passwordTrailingIcon), contentDescription = "password trailing icon")
+                                Icon(
+                                    painter = painterResource(viewModel.passwordTrailingIcon),
+                                    contentDescription = "password trailing icon"
+                                )
                             }
-                        }
+                        },
+                        visualTransformation = viewModel.passwordVisualTransformation
+                    )
+                }
+                if (signUpstate.passwordError && signUpstate.passwordErrorMessage != null) {
+                    Text(
+                        text = signUpstate.passwordErrorMessage,
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        fontFamily = appFont,
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                     )
                 }
             }
@@ -294,20 +331,22 @@ fun SignupScreen(
                     .fillMaxWidth()
                     .height(48.dp),
                 onClick = {
-                    viewModel.signUp()
+                    viewModel.signUp(context)
                 },
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF3A4EFB)
                 )
             ) {
-                if(isLoading){
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(36.dp)
-                    )
-                }else{
-                Text("Sign up", fontFamily = appFont)
+                if (isLoading) {
+                    Box {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                } else {
+                    Text("Sign up", fontFamily = appFont)
                 }
             }
             //or text
@@ -345,7 +384,8 @@ fun SignupScreen(
                             )
                             val credential = result.credential
                             if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                val googleIdTokenCredential =
+                                    GoogleIdTokenCredential.createFrom(credential.data)
                                 viewModel.signInWithGoogle(googleIdTokenCredential.idToken)
                             }
                         } catch (e: Exception) {
@@ -376,8 +416,7 @@ fun SignupScreen(
                             .weight(1f)
                             .padding(start = 12.dp),
                         color = Color.Black,
-                        textAlign = TextAlign.Center
-                        , fontFamily = appFont
+                        textAlign = TextAlign.Center, fontFamily = appFont
                     )
                 }
             }

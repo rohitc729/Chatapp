@@ -1,5 +1,7 @@
 package com.rohitchauhan.hiichat.data.repository
 
+import android.content.Context
+import android.net.Uri
 import com.rohitchauhan.hiichat.data.remote.firebase.FirebaseService
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.ChatModel
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.MessageDto
@@ -12,13 +14,15 @@ class FireBaseRepoImpl @Inject constructor(
     private val firebaseService: FirebaseService
 ): FirebaseRepo {
     override fun signUp(
+        context: Context,
         email: String,
         password: String,
         name: String,
+        imageUri: Uri?,
         onSuccess: (Boolean) -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        firebaseService.signUpUser(email, password, name, onSuccess, onFailure)
+        firebaseService.signUpUser(context, email, password, name, imageUri, onSuccess, onFailure)
     }
 
     override fun signin(

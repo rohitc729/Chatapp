@@ -50,7 +50,8 @@ fun MyTextField(
     singleLine: Boolean = true,
     maxLine: Int = Int.MAX_VALUE,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    isError: Boolean = false
+    isError: Boolean = false,
+    visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     BasicTextField(
         value = value,
@@ -58,19 +59,20 @@ fun MyTextField(
             onValueChange(it)
         },
         modifier = modifier.heightIn(min = 48.dp),
-        textStyle = TextStyle(fontSize = 16.sp, fontFamily = appFont),
+        textStyle = TextStyle(fontSize = 14.sp, fontFamily = appFont),
         singleLine = singleLine,
         maxLines = maxLine,
         keyboardOptions = keyboardOptions,
+        visualTransformation = visualTransformation,
         decorationBox = { innerTextField ->
             TextFieldDefaults.DecorationBox(
                 value = value,
                 innerTextField = innerTextField,
                 enabled = true,
                 singleLine = singleLine,
-                visualTransformation = VisualTransformation.None,
+                visualTransformation = visualTransformation,
                 interactionSource = remember { MutableInteractionSource() },
-                placeholder = { Text(placeHolder, fontSize = 16.sp) },
+                placeholder = { Text(placeHolder, fontSize = 14.sp) },
                 leadingIcon = leadingIcon,
                 trailingIcon = trailingIcon,
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),

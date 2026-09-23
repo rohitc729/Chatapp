@@ -1,5 +1,7 @@
 package com.rohitchauhan.hiichat.data.remote.firebase
 
+import android.content.Context
+import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
@@ -8,9 +10,12 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.messaging.FirebaseMessaging
+import com.rohitchauhan.hiichat.data.local.room.UserDao
+import com.rohitchauhan.hiichat.data.local.room.UserEntity
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.ChatModel
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.MessageDto
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
+import com.rohitchauhan.hiichat.data.remote.supabase.SupabaseService
 import com.rohitchauhan.hiichat.data.remote.supabase.dto.NotificationRequest
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
@@ -21,12 +26,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class FirebaseService @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firebaseDatabase: FirebaseDatabase,
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    private val supabaseService: SupabaseService,
+    private val userDao: UserDao
 ) {
     //1. Current user id
     fun getCurrentUid(): String? = firebaseAuth.currentUser?.uid
@@ -36,27 +44,58 @@ class FirebaseService @Inject constructor(
         return if (myUid < otherUserId) "${myUid}_$otherUserId" else "${otherUserId}_$myUid"
     }
 
-    //2. Signup user
+    //2. Signup user (handles image upload via Supabase & stores data in Room local DB)
     fun signUpUser(
+        context: Context,
         email: String,
         password: String,
         name: String,
+        imageUri: Uri?,
         onSuccess: (Boolean) -> Unit,
         onFailure: (Exception) -> Unit
     ) {
         firebaseAuth.createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
-                firebaseDatabase.reference.child("users").child(getCurrentUid()!!).setValue(
-                    UserDto(
-                        id = getCurrentUid()!!,
-                        name = name,
-                        email = email,
-                    )
-                ).addOnSuccessListener {
-                    updateFcmToken()
-                    onSuccess(true)
-                }.addOnFailureListener {
-                    onFailure(it)
+            .addOnSuccessListener { authResult ->
+                val uid = authResult.user?.uid ?: getCurrentUid() ?: ""
+                
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        var profileImageUrl = ""
+                        if (imageUri != null) {
+                            val fileName = "users/$uid/profile_${System.currentTimeMillis()}.jpeg"
+                            profileImageUrl = supabaseService.uploadImage(
+                                context = context,
+                                uri = imageUri,
+                                bucketName = "profile-images",
+                                path = fileName
+                            )
+                        }
+
+                        val userDto = UserDto(
+                            id = uid,
+                            name = name,
+                            email = email,
+                            profileImg = profileImageUrl
+                        )
+
+                        // 1. Save to Firebase Realtime Database
+                        firebaseDatabase.reference.child("users").child(uid).setValue(userDto)
+                            .await()
+
+                        // 2. Save to local Room database
+                        userDao.insertUser(UserEntity.fromUserDto(userDto))
+
+                        // 3. Update FCM token
+                        updateFcmToken()
+
+                        withContext(Dispatchers.Main) {
+                            onSuccess(true)
+                        }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            onFailure(e)
+                        }
+                    }
                 }
             }
             .addOnFailureListener {
@@ -112,18 +151,23 @@ class FirebaseService @Inject constructor(
             .addOnSuccessListener { authResult ->
                 val user = authResult.user
                 if (user != null) {
-                    firebaseDatabase.reference.child("users").child(user.uid).setValue(
-                        UserDto(
-                            id = user.uid,
-                            name = user.displayName ?: "",
-                            email = user.email ?: "",
-                        )
-                    ).addOnSuccessListener {
-                        updateFcmToken()
-                        onSuccess(true)
-                    }.addOnFailureListener {
-                        onFailure(it)
-                    }
+                    val userDto = UserDto(
+                        id = user.uid,
+                        name = user.displayName ?: "",
+                        email = user.email ?: "",
+                        profileImg = user.photoUrl?.toString() ?: ""
+                    )
+                    firebaseDatabase.reference.child("users").child(user.uid).setValue(userDto)
+                        .addOnSuccessListener {
+                            // Also save to local Room DB on Google sign-in
+                            CoroutineScope(Dispatchers.IO).launch {
+                                userDao.insertUser(UserEntity.fromUserDto(userDto))
+                            }
+                            updateFcmToken()
+                            onSuccess(true)
+                        }.addOnFailureListener {
+                            onFailure(it)
+                        }
                 }
             }
             .addOnFailureListener {
@@ -222,8 +266,6 @@ class FirebaseService @Inject constructor(
                 if (updates.isNotEmpty()) {
                     messagesRef.updateChildren(updates)
                 }
-                // Reset unread count
-                // In a production app, you'd check if the last message was sent by the other user
                 firebaseDatabase.reference.child("chats").child(chatId).child("unreadCount").setValue(0)
             }
             override fun onCancelled(error: DatabaseError) {}
@@ -234,13 +276,11 @@ class FirebaseService @Inject constructor(
         val scope = CoroutineScope(Dispatchers.IO)
         scope.launch {
             try {
-                // 1. Get receiver's FCM token
                 val receiverSnapshot = firebaseDatabase.reference.child("users").child(message.receiverId).get().await()
                 val receiver = receiverSnapshot.getValue(UserDto::class.java)
                 val token = receiver?.fcmToken
 
                 if (!token.isNullOrBlank()) {
-                    // 2. Call Supabase Edge Function
                     val senderSnapshot = firebaseDatabase.reference.child("users").child(message.senderId).get().await()
                     val sender = senderSnapshot.getValue(UserDto::class.java)
                     
@@ -253,7 +293,6 @@ class FirebaseService @Inject constructor(
                     supabaseClient.functions.invoke("notify-user", request)
                 }
             } catch (e: Exception) {
-                // Log notification failure but don't break message sending
                 e.printStackTrace()
             }
         }
@@ -281,27 +320,22 @@ class FirebaseService @Inject constructor(
         }
         val userChatsRef = firebaseDatabase.reference.child("user_chats").child(uid)
         
-        // Map to keep track of individual listeners for each chat
         val chatListeners = mutableMapOf<String, ValueEventListener>()
 
         val userChatsListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val currentChatIds = snapshot.children.mapNotNull { it.key }.toSet()
                 
-                // Remove listeners for chats no longer in the list
                 val removedChatIds = chatListeners.keys - currentChatIds
                 removedChatIds.forEach { id ->
                     firebaseDatabase.reference.child("chats").child(id).removeEventListener(chatListeners[id]!!)
                     chatListeners.remove(id)
                 }
 
-                // Add listeners for new chats
                 val newChatIds = currentChatIds - chatListeners.keys
                 newChatIds.forEach { chatId ->
                     val listener = object : ValueEventListener {
                         override fun onDataChange(chatSnapshot: DataSnapshot) {
-                            // When any chat updates, we re-fetch all active chats to emit a new list
-                            // This is a bit heavy, but ensures real-time updates for metadata
                             fetchAllChats(currentChatIds.toList())
                         }
                         override fun onCancelled(error: DatabaseError) {}
@@ -310,7 +344,6 @@ class FirebaseService @Inject constructor(
                     chatListeners[chatId] = listener
                 }
 
-                // Initial fetch if list changed
                 fetchAllChats(currentChatIds.toList())
             }
 

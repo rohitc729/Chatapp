@@ -1,12 +1,22 @@
 package com.rohitchauhan.hiichat.domain.repository
 
+import android.content.Context
+import android.net.Uri
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.ChatModel
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.MessageDto
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
 import kotlinx.coroutines.flow.Flow
 
 interface FirebaseRepo {
-    fun signUp(email: String, password: String, name: String, onSuccess: (Boolean) -> Unit, onFailure: (Exception) -> Unit)
+    fun signUp(
+        context: Context,
+        email: String,
+        password: String,
+        name: String,
+        imageUri: Uri?,
+        onSuccess: (Boolean) -> Unit,
+        onFailure: (Exception) -> Unit
+    )
     fun signin(email: String, password: String,onSuccess: (Boolean) -> Unit, onFailure: (Exception) -> Unit)
     fun signOut()
     fun sendPasswordResetEmail(email: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit)
