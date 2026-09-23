@@ -33,8 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -49,10 +47,11 @@ import com.rohitchauhan.hiichat.utils.shimmerEffect
 
 @Composable
 fun ChatListScreen(
-    onChatClick: (chatId: String, otherUserId: String, otherUserName: String) -> Unit = { _, _, _ -> }
+    viewModel: ChatListScreenVM = hiltViewModel(),
+    onChatClick: (chatId: String, otherUserId: String, otherUserName: String,otherUserImage: String) -> Unit = { _, _, _, _ -> }
 ) {
-    val viewModel: ChatListScreenVM = hiltViewModel()
     val chatList by viewModel.chatListState.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     var text by remember { mutableStateOf("") }
@@ -88,7 +87,7 @@ fun ChatListScreen(
             item {
                 StoryItem(
                     userName = "Your Story",
-                    image = R.drawable.user_unselected,
+                    image = currentUser?.profileImg,
                     onItemClick = {},
                     addIcon = {
                         Card(
@@ -137,9 +136,9 @@ fun ChatListScreen(
                     items(chatList) { chat ->
                         ChatListItem(
                             onItemClick = {
-                                onChatClick(chat.chatId, chat.otherUserId, chat.otherUserName)
+                                onChatClick(chat.chatId, chat.otherUserId, chat.otherUserName,chat.profileImg)
                             },
-                            profileImage = chat.profileImg, // Default for now
+                            profileImage = chat.profileImg,
                             name = chat.otherUserName,
                             lastMessage = chat.lastMessage,
                             lastTimestamp = chat.lastTimestamp,
@@ -200,7 +199,7 @@ fun EmptyChatState() {
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = Icons.Outlined.ChatBubbleOutline,
+            painterResource(R.drawable.chat_selected),
             contentDescription = null,
             modifier = Modifier.size(100.dp),
             tint = Color(0xFF3A4EFB).copy(alpha = 0.3f)

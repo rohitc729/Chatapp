@@ -44,7 +44,7 @@ import com.rohitchauhan.hiichat.ui.viewmodel.GetAllUsersState
 
 @Composable
 fun AddChatScreen(
-    onUserClick: (chatId: String, otherUserId: String, otherUserName: String) -> Unit = { _, _, _ -> }
+    onUserClick: (chatId: String, otherUserId: String, otherUserName: String,otherUserImage:String) -> Unit = { _, _, _,_ -> },onBack:()-> Unit
 ) {
     val viewModel: AddChatScreenVM = hiltViewModel()
     val getAllUsersState = viewModel.getAllUsersState.collectAsStateWithLifecycle().value
@@ -58,7 +58,7 @@ fun AddChatScreen(
         ) {
             Row(modifier = Modifier.fillMaxWidth().padding(end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
-                    onClick = {}
+                    onClick = onBack
                 ) {
                     Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "back")
                 }
@@ -104,7 +104,8 @@ fun AddChatScreen(
                                     onUserClick(
                                         viewModel.getChatId(user.id),
                                         user.id,
-                                        user.name
+                                        user.name,
+                                        user.profileImg
                                     )
                                 }
                             )

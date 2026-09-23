@@ -3,6 +3,8 @@ package com.rohitchauhan.hiichat.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rohitchauhan.hiichat.data.remote.firebase.FirebaseService
+import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
+import com.rohitchauhan.hiichat.domain.use_case.GetCurrentUserUC
 import com.rohitchauhan.hiichat.domain.use_case.GetUserByIdUC
 import com.rohitchauhan.hiichat.domain.use_case.GetUserChatsUC
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,17 +16,30 @@ import javax.inject.Inject
 class ChatListScreenVM @Inject constructor(
     private val getUserChatsUC: GetUserChatsUC,
     private val getUserByIdUC: GetUserByIdUC,
+    private val getCurrentUserUC: GetCurrentUserUC,
     private val firebaseService: FirebaseService
 ) : ViewModel() {
 
     private val _chatListState = MutableStateFlow<List<ChatUiModel>>(emptyList())
     val chatListState = _chatListState.asStateFlow()
 
+    private val _currentUser = MutableStateFlow<UserDto?>(null)
+    val currentUser = _currentUser.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
     init {
         getChatList()
+        getCurrentUser()
+    }
+
+    private fun getCurrentUser() {
+        viewModelScope.launch {
+            getCurrentUserUC().collect { user ->
+                _currentUser.value = user
+            }
+        }
     }
 
     private fun getChatList() {

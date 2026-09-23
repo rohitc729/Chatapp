@@ -1,6 +1,5 @@
 package com.rohitchauhan.hiichat.ui.screens.bnscreens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,18 +13,28 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.rohitchauhan.hiichat.R
+import com.rohitchauhan.hiichat.ui.viewmodel.ChatListScreenVM
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(
+    viewModel: ChatListScreenVM = hiltViewModel()
+) {
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -33,12 +42,16 @@ fun ProfileScreen() {
         Box(
             contentAlignment = Alignment.BottomEnd
         ) {
-            Image(
-                painter = painterResource(R.drawable.avatar5),
+            AsyncImage(
+                model = currentUser?.profileImg,
                 contentDescription = "profile image",
                 modifier = Modifier
                     .size(150.dp)
-                    .clip(CircleShape)
+                    .clip(CircleShape),
+                placeholder = painterResource(R.drawable.user_selected),
+                fallback = painterResource(id = R.drawable.user_unselected),
+                error = painterResource(id = R.drawable.user_unselected),
+                contentScale = ContentScale.Crop
             )
             Card(
                 modifier = Modifier.size(46.dp),
@@ -64,21 +77,21 @@ fun ProfileScreen() {
                 Icon(painter = painterResource(R.drawable.user_unselected), contentDescription = "", modifier = Modifier.size(28.dp))
                 Column(modifier = Modifier.padding(start = 16.dp)) {
                     Text("Name", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Text("Rohit chauhan", fontSize = 16.sp)
+                    Text(currentUser?.name.takeIf { !it.isNullOrBlank() } ?: "User Name", fontSize = 16.sp)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(painter = painterResource(R.drawable.about_icon), contentDescription = "", modifier = Modifier.size(28.dp))
                 Column(modifier = Modifier.padding(start = 16.dp)) {
-                    Text("About", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Text("add about yourself", fontSize = 16.sp)
+                    Text("Email", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(currentUser?.email.takeIf { !it.isNullOrBlank() } ?: "email@example.com", fontSize = 16.sp)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(painter = painterResource(R.drawable.call_selected), contentDescription = "", modifier = Modifier.size(28.dp))
                 Column(modifier = Modifier.padding(start = 16.dp)) {
                     Text("Phone", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Text("+91 7084645838", fontSize = 16.sp)
+                    Text("Add phone number", fontSize = 16.sp)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {

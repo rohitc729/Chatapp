@@ -23,6 +23,7 @@ interface FirebaseRepo {
     fun signInWithGoogle(idToken: String, onSuccess: (Boolean) -> Unit, onFailure: (Exception) -> Unit)
     fun getAllUsers(): Flow<List<UserDto>>
     fun getUserById(uid: String): Flow<UserDto?>
+    fun getCurrentUser(): Flow<UserDto?>
     fun sendMessage(message: MessageDto, onSuccess: () -> Unit, onFailure: (Exception) -> Unit)
     fun getMessages(chatId: String): Flow<List<MessageDto>>
     fun getUserChats(): Flow<List<ChatModel>>

@@ -1,11 +1,13 @@
 package com.rohitchauhan.hiichat.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,10 +25,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.rohitchauhan.hiichat.R
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
 import com.rohitchauhan.hiichat.utils.getRandomColor
@@ -42,18 +46,24 @@ fun UserItem(
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (user.profileImg.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .size(50.dp)
-                    .background(shape = CircleShape, color = getRandomColor().copy(alpha = .2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(user.name[0].uppercase(), fontSize = 18.sp)
-            }
-        } else {
-
-        }
+        AsyncImage(
+            model = user.profileImg,
+            contentDescription = "profileimage",
+            modifier = Modifier
+                .size(50.dp)
+                .padding(
+                    if(user.profileImg.isEmpty()) 4.dp else 0.dp
+                )
+                .clip(CircleShape)
+                .background(color = Color.LightGray)
+                .padding(
+                    if(user.profileImg.isEmpty()) 4.dp else 0.dp
+                ),
+            placeholder = painterResource(id = R.drawable.user_unselected),
+            fallback = painterResource(id = R.drawable.user_unselected),
+            error = painterResource(id = R.drawable.user_unselected),
+            contentScale = ContentScale.Crop
+        )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = user.name,

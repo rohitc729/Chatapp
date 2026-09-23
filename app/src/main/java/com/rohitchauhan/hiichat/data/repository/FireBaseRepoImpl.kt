@@ -2,16 +2,19 @@ package com.rohitchauhan.hiichat.data.repository
 
 import android.content.Context
 import android.net.Uri
+import com.rohitchauhan.hiichat.data.local.room.UserDao
 import com.rohitchauhan.hiichat.data.remote.firebase.FirebaseService
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.ChatModel
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.MessageDto
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
 import com.rohitchauhan.hiichat.domain.repository.FirebaseRepo
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class FireBaseRepoImpl @Inject constructor(
-    private val firebaseService: FirebaseService
+    private val firebaseService: FirebaseService,
+    private val userDao: UserDao
 ): FirebaseRepo {
     override fun signUp(
         context: Context,
@@ -60,6 +63,10 @@ class FireBaseRepoImpl @Inject constructor(
 
     override fun getUserById(uid: String): Flow<UserDto?> {
         return firebaseService.getUserById(uid)
+    }
+
+    override fun getCurrentUser(): Flow<UserDto?> {
+        return userDao.getCurrentUser().map { it?.toUserDto() }
     }
 
     override fun sendMessage(

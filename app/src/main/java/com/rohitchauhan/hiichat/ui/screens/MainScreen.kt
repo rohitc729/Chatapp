@@ -22,6 +22,7 @@ import com.rohitchauhan.hiichat.ui.screens.bnscreens.CallsScreen
 import com.rohitchauhan.hiichat.ui.screens.bnscreens.ChatListScreen
 import com.rohitchauhan.hiichat.ui.screens.bnscreens.ProfileScreen
 import com.rohitchauhan.hiichat.ui.viewmodel.MainScreenVM
+import com.rohitchauhan.hiichat.ui.viewmodel.ChatListScreenVM
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.rohitchauhan.hiichat.R
 import androidx.navigation.NavHostController
 import com.rohitchauhan.hiichat.ui.navigation.MainRouts
+import com.rohitchauhan.hiichat.ui.navigation.RootGraph
 
 @Composable
 fun MainScreen(
@@ -41,6 +43,7 @@ fun MainScreen(
 ) {
     val subNavController = rememberNavController()
     val viewModel: MainScreenVM = hiltViewModel()
+    val chatListScreenVM: ChatListScreenVM = hiltViewModel()
     var showMenu by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -97,15 +100,18 @@ fun MainScreen(
         ) {
             composable(SubRouts.ChatListRout.rout) {
                 ChatListScreen(
-                    onChatClick = { chatId, otherUserId, otherUserName ->
+                    viewModel = chatListScreenVM,
+                    onChatClick = { chatId, otherUserId, otherUserName ,otherUserImage->
                         navController.navigate(
-                            MainRouts.ChatDetailScreen(chatId, otherUserId, otherUserName)
+                            MainRouts.ChatDetailScreen(chatId, otherUserId, otherUserName,otherUserImage)
                         )
                     }
                 )
             }
             composable(SubRouts.CallRout.rout) { CallsScreen() }
-            composable(SubRouts.ProfileRout.rout) { ProfileScreen() }
+            composable(SubRouts.ProfileRout.rout) {
+                ProfileScreen(viewModel = chatListScreenVM)
+            }
         }
     }
 }

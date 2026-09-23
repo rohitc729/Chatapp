@@ -1,6 +1,5 @@
 package com.rohitchauhan.hiichat.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,38 +9,34 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil3.compose.AsyncImage
 import com.rohitchauhan.hiichat.R
 import com.rohitchauhan.hiichat.components.MessageBubble
 import com.rohitchauhan.hiichat.components.MyTextField
-import com.rohitchauhan.hiichat.data.remote.firebase.dto.MessageDto
 import com.rohitchauhan.hiichat.ui.viewmodel.ChatDetailScreenVM
 import com.rohitchauhan.hiichat.utils.getRandomColor
-import java.util.*
-import kotlin.collections.emptyList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +44,8 @@ fun ChatDetailScreen(
     chatId: String,
     otherUserId: String,
     otherUserName: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    otherUserImage: String
 ) {
     val viewModel: ChatDetailScreenVM = hiltViewModel()
     val messages by viewModel.messagesState.collectAsState()
@@ -101,17 +97,20 @@ fun ChatDetailScreen(
                 ) {
                     Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "back")
                 }
-                Box(
+                AsyncImage(
+                    model = otherUserImage,
+                    contentDescription = "profileimage",
                     modifier = Modifier
                         .size(50.dp)
-                        .background(
-                            shape = CircleShape,
-                            color = getRandomColor().copy(alpha = .2f)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(otherUserName[0].uppercase(), fontSize = 18.sp)
-                }
+                        .padding(
+                            if (otherUserImage.isEmpty()) 4.dp else 0.dp
+                        )
+                        .clip(CircleShape),
+                    placeholder = painterResource(id = R.drawable.user_unselected),
+                    fallback = painterResource(id = R.drawable.user_unselected),
+                    error = painterResource(id = R.drawable.user_unselected),
+                    contentScale = ContentScale.Crop
+                )
                 Text(
                     otherUserName, modifier = Modifier
                         .padding(start = 8.dp)
@@ -283,4 +282,6 @@ fun ChatDetailScreen(
         }
     }
 }
+
+
 

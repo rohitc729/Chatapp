@@ -28,7 +28,8 @@ sealed class MainRouts{
     data class ChatDetailScreen(
         val chatId: String,
         val otherUserId: String,
-        val otherUserName: String
+        val otherUserName: String,
+        val otherUserImage: String,
     ): MainRouts()
     @Serializable
     object CallRout: MainRouts()

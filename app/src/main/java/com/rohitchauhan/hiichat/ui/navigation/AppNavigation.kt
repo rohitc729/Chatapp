@@ -30,7 +30,7 @@ fun AppNavigation() {
 }
 
 private fun NavGraphBuilder.authGraph(navController: NavHostController) {
-    navigation<RootGraph.AuthGraph>(startDestination = AuthRouts.SignupRout) {
+    navigation<RootGraph.AuthGraph>(startDestination = AuthRouts.SplashRout) {
         composable<AuthRouts.SplashRout>() {
             val viewModel: SplashScreenVM = hiltViewModel()
             SplashScreen {
@@ -99,8 +99,15 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
         }
         composable<MainRouts.AddChatScreen> {
             AddChatScreen(
-                onUserClick = { chatId, otherUserId, otherUserName ->
-                    navController.navigate(MainRouts.ChatDetailScreen(chatId, otherUserId, otherUserName))
+                onUserClick = { chatId, otherUserId, otherUserName ,otherUserImage->
+                    navController.navigate(MainRouts.ChatDetailScreen(chatId, otherUserId, otherUserName,otherUserImage)) {
+                        popUpTo<MainRouts.AddChatScreen> {
+                            inclusive = true
+                        }
+                    }
+                },
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -110,6 +117,7 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
                 chatId = chatDetail.chatId,
                 otherUserId = chatDetail.otherUserId,
                 otherUserName = chatDetail.otherUserName,
+                otherUserImage = chatDetail.otherUserImage,
                 onBackClick = {
                     navController.popBackStack()
                 }

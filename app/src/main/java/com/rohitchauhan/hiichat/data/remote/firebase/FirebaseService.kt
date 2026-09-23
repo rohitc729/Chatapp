@@ -103,7 +103,7 @@ class FirebaseService @Inject constructor(
             }
     }
 
-    //3.Login user
+    //3.Login user (Email/Password) - fetches user from Firebase and updates Room DB
     fun signIn(
         email: String,
         password: String,
@@ -111,16 +111,45 @@ class FirebaseService @Inject constructor(
         onFailure: (Exception) -> Unit
     ) {
         firebaseAuth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
-                updateFcmToken()
-                onSuccess(true)
+            .addOnSuccessListener { authResult ->
+                val uid = authResult.user?.uid ?: getCurrentUid()
+                if (uid != null) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val snapshot = firebaseDatabase.reference.child("users").child(uid).get().await()
+                            val userDto = snapshot.getValue(UserDto::class.java)
+                            if (userDto != null) {
+                                userDao.insertUser(UserEntity.fromUserDto(userDto))
+                            }
+                            updateFcmToken()
+                            withContext(Dispatchers.Main) {
+                                onSuccess(true)
+                            }
+                        } catch (e: Exception) {
+                            updateFcmToken()
+                            withContext(Dispatchers.Main) {
+                                onSuccess(true)
+                            }
+                        }
+                    }
+                } else {
+                    updateFcmToken()
+                    onSuccess(true)
+                }
             }
-            .addOnFailureListener {onFailure(it)  }
+            .addOnFailureListener { onFailure(it) }
     }
 
     //4.Logout user
     fun signOut() {
         firebaseAuth.signOut()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                userDao.clearUser()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
     fun sendPasswordResetEmail(
         email: String,
@@ -141,6 +170,8 @@ class FirebaseService @Inject constructor(
             }
     }
 
+
+    //5. Sign in with Google - fetches/creates user in Firebase and updates Room DB
     fun signInWithGoogle(
         idToken: String,
         onSuccess: (Boolean) -> Unit,
@@ -151,23 +182,36 @@ class FirebaseService @Inject constructor(
             .addOnSuccessListener { authResult ->
                 val user = authResult.user
                 if (user != null) {
-                    val userDto = UserDto(
-                        id = user.uid,
-                        name = user.displayName ?: "",
-                        email = user.email ?: "",
-                        profileImg = user.photoUrl?.toString() ?: ""
-                    )
-                    firebaseDatabase.reference.child("users").child(user.uid).setValue(userDto)
-                        .addOnSuccessListener {
-                            // Also save to local Room DB on Google sign-in
-                            CoroutineScope(Dispatchers.IO).launch {
-                                userDao.insertUser(UserEntity.fromUserDto(userDto))
+                    val uid = user.uid
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val userRef = firebaseDatabase.reference.child("users").child(uid)
+                            val snapshot = userRef.get().await()
+                            var userDto = snapshot.getValue(UserDto::class.java)
+
+                            if (userDto == null) {
+                                userDto = UserDto(
+                                    id = uid,
+                                    name = user.displayName ?: "",
+                                    email = user.email ?: "",
+                                    profileImg = user.photoUrl?.toString() ?: ""
+                                )
+                                userRef.setValue(userDto).await()
                             }
+
+                            // Save to local Room DB
+                            userDao.insertUser(UserEntity.fromUserDto(userDto))
+
                             updateFcmToken()
-                            onSuccess(true)
-                        }.addOnFailureListener {
-                            onFailure(it)
+                            withContext(Dispatchers.Main) {
+                                onSuccess(true)
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                onFailure(e)
+                            }
                         }
+                    }
                 }
             }
             .addOnFailureListener {
