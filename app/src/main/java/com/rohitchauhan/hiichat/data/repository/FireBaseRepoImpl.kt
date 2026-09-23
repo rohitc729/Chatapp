@@ -74,4 +74,12 @@ class FireBaseRepoImpl @Inject constructor(
         return firebaseService.getUserChats()
     }
 
+    override fun updateFcmToken(token: String) {
+        firebaseService.updateFcmToken(token)
+    }
+
+    override fun markMessagesAsRead(chatId: String) {
+        firebaseService.markMessagesAsRead(chatId)
+    }
+
 }

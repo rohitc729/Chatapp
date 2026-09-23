@@ -16,4 +16,6 @@ interface FirebaseRepo {
     fun sendMessage(message: MessageDto, onSuccess: () -> Unit, onFailure: (Exception) -> Unit)
     fun getMessages(chatId: String): Flow<List<MessageDto>>
     fun getUserChats(): Flow<List<ChatModel>>
+    fun updateFcmToken(token: String)
+    fun markMessagesAsRead(chatId: String)
 }

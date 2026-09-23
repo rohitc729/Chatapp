@@ -5,20 +5,28 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.messaging.FirebaseMessaging
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.ChatModel
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.MessageDto
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.UserDto
+import com.rohitchauhan.hiichat.data.remote.supabase.dto.NotificationRequest
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.functions.functions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class FirebaseService @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
-    private val firebaseDatabase: FirebaseDatabase
+    private val firebaseDatabase: FirebaseDatabase,
+    private val supabaseClient: SupabaseClient
 ) {
     //1. Current user id
     fun getCurrentUid(): String? = firebaseAuth.currentUser?.uid
@@ -182,13 +190,73 @@ class FirebaseService @Inject constructor(
         updates["/chats/$chatId/chatId"] = chatId
         updates["/chats/$chatId/members"] = listOf(finalMessage.senderId, finalMessage.receiverId)
         
+        // Atomically increment unread count for the receiver
+        updates["/chats/$chatId/unreadCount"] = ServerValue.increment(1)
+        
         // 3. Update index for both users
         updates["/user_chats/${finalMessage.senderId}/$chatId"] = true
         updates["/user_chats/${finalMessage.receiverId}/$chatId"] = true
 
         firebaseDatabase.reference.updateChildren(updates)
-            .addOnSuccessListener { onSuccess() }
+            .addOnSuccessListener { 
+                onSuccess()
+                // Trigger notification in background
+                triggerNotification(finalMessage)
+            }
             .addOnFailureListener { onFailure(it) }
+    }
+
+    fun markMessagesAsRead(chatId: String) {
+        val myUid = getCurrentUid() ?: return
+        val messagesRef = firebaseDatabase.reference.child("messages").child(chatId)
+        
+        messagesRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val updates = hashMapOf<String, Any?>()
+                for (messageSnapshot in snapshot.children) {
+                    val message = messageSnapshot.getValue(MessageDto::class.java)
+                    if (message != null && message.receiverId == myUid && !message.isRead) {
+                        updates["${messageSnapshot.key}/isRead"] = true
+                    }
+                }
+                if (updates.isNotEmpty()) {
+                    messagesRef.updateChildren(updates)
+                }
+                // Reset unread count
+                // In a production app, you'd check if the last message was sent by the other user
+                firebaseDatabase.reference.child("chats").child(chatId).child("unreadCount").setValue(0)
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
+    }
+
+    private fun triggerNotification(message: MessageDto) {
+        val scope = CoroutineScope(Dispatchers.IO)
+        scope.launch {
+            try {
+                // 1. Get receiver's FCM token
+                val receiverSnapshot = firebaseDatabase.reference.child("users").child(message.receiverId).get().await()
+                val receiver = receiverSnapshot.getValue(UserDto::class.java)
+                val token = receiver?.fcmToken
+
+                if (!token.isNullOrBlank()) {
+                    // 2. Call Supabase Edge Function
+                    val senderSnapshot = firebaseDatabase.reference.child("users").child(message.senderId).get().await()
+                    val sender = senderSnapshot.getValue(UserDto::class.java)
+                    
+                    val request = NotificationRequest(
+                        token = token,
+                        title = sender?.name ?: "New Message",
+                        body = message.messageText
+                    )
+                    
+                    supabaseClient.functions.invoke("notify-user", request)
+                }
+            } catch (e: Exception) {
+                // Log notification failure but don't break message sending
+                e.printStackTrace()
+            }
+        }
     }
 
     fun getMessages(chatId: String): Flow<List<MessageDto>> = callbackFlow {
@@ -213,35 +281,55 @@ class FirebaseService @Inject constructor(
         }
         val userChatsRef = firebaseDatabase.reference.child("user_chats").child(uid)
         
-        val listener = object : ValueEventListener {
+        // Map to keep track of individual listeners for each chat
+        val chatListeners = mutableMapOf<String, ValueEventListener>()
+
+        val userChatsListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val chatIds = snapshot.children.mapNotNull { it.key }
+                val currentChatIds = snapshot.children.mapNotNull { it.key }.toSet()
+                
+                // Remove listeners for chats no longer in the list
+                val removedChatIds = chatListeners.keys - currentChatIds
+                removedChatIds.forEach { id ->
+                    firebaseDatabase.reference.child("chats").child(id).removeEventListener(chatListeners[id]!!)
+                    chatListeners.remove(id)
+                }
+
+                // Add listeners for new chats
+                val newChatIds = currentChatIds - chatListeners.keys
+                newChatIds.forEach { chatId ->
+                    val listener = object : ValueEventListener {
+                        override fun onDataChange(chatSnapshot: DataSnapshot) {
+                            // When any chat updates, we re-fetch all active chats to emit a new list
+                            // This is a bit heavy, but ensures real-time updates for metadata
+                            fetchAllChats(currentChatIds.toList())
+                        }
+                        override fun onCancelled(error: DatabaseError) {}
+                    }
+                    firebaseDatabase.reference.child("chats").child(chatId).addValueEventListener(listener)
+                    chatListeners[chatId] = listener
+                }
+
+                // Initial fetch if list changed
+                fetchAllChats(currentChatIds.toList())
+            }
+
+            private fun fetchAllChats(chatIds: List<String>) {
                 if (chatIds.isEmpty()) {
                     trySend(emptyList())
                     return
                 }
-
-                val chats = mutableListOf<ChatModel>()
-                var processedCount = 0
                 
-                chatIds.forEach { chatId ->
-                    firebaseDatabase.reference.child("chats").child(chatId)
-                        .addListenerForSingleValueEvent(object : ValueEventListener {
-                            override fun onDataChange(chatSnapshot: DataSnapshot) {
-                                chatSnapshot.getValue(ChatModel::class.java)?.let { chats.add(it) }
-                                processedCount++
-                                if (processedCount == chatIds.size) {
-                                    trySend(chats.sortedByDescending { it.lastTimestamp })
-                                }
-                            }
-                            override fun onCancelled(error: DatabaseError) {
-                                // Log or handle partial failure
-                                processedCount++
-                                if (processedCount == chatIds.size) {
-                                    trySend(chats.sortedByDescending { it.lastTimestamp })
-                                }
-                            }
-                        })
+                val chats = mutableListOf<ChatModel>()
+                var count = 0
+                chatIds.forEach { id ->
+                    firebaseDatabase.reference.child("chats").child(id).get().addOnSuccessListener { s ->
+                        s.getValue(ChatModel::class.java)?.let { chats.add(it) }
+                        count++
+                        if (count == chatIds.size) {
+                            trySend(chats.sortedByDescending { it.lastTimestamp })
+                        }
+                    }
                 }
             }
 
@@ -250,14 +338,24 @@ class FirebaseService @Inject constructor(
             }
         }
         
-        userChatsRef.addValueEventListener(listener)
-        awaitClose { userChatsRef.removeEventListener(listener) }
+        userChatsRef.addValueEventListener(userChatsListener)
+        
+        awaitClose {
+            userChatsRef.removeEventListener(userChatsListener)
+            chatListeners.forEach { (id, listener) ->
+                firebaseDatabase.reference.child("chats").child(id).removeEventListener(listener)
+            }
+        }
+    }
+
+    fun updateFcmToken(token: String) {
+        val uid = getCurrentUid() ?: return
+        firebaseDatabase.reference.child("users").child(uid).child("fcmToken").setValue(token)
     }
 
     private fun updateFcmToken() {
-        val uid = getCurrentUid() ?: return
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
-            firebaseDatabase.reference.child("users").child(uid).child("fcmToken").setValue(token)
+            updateFcmToken(token)
         }
     }
 

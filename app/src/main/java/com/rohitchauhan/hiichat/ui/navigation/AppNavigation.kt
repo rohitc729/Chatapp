@@ -17,6 +17,7 @@ import com.rohitchauhan.hiichat.ui.screens.AddChatScreen
 import com.rohitchauhan.hiichat.ui.screens.ChatDetailScreen
 import com.rohitchauhan.hiichat.ui.viewmodel.SplashScreenVM
 import androidx.navigation.toRoute
+import com.rohitchauhan.hiichat.ui.screens.CallScreen
 
 
 @Composable
@@ -29,12 +30,14 @@ fun AppNavigation() {
 }
 
 private fun NavGraphBuilder.authGraph(navController: NavHostController) {
-    navigation<RootGraph.AuthGraph>(startDestination = AuthRouts.SplashRout) {
+    navigation<RootGraph.AuthGraph>(startDestination = AuthRouts.SignupRout) {
         composable<AuthRouts.SplashRout>() {
             val viewModel: SplashScreenVM = hiltViewModel()
             SplashScreen {
                 if (viewModel.isLogged()) {
-                    navController.navigate(RootGraph.MainGraph)
+                    navController.navigate(RootGraph.MainGraph){
+                        popUpTo(RootGraph.AuthGraph){inclusive=true}
+                    }
                 } else {
                     navController.navigate(AuthRouts.LoginRout){
                         popUpTo(AuthRouts.SplashRout){inclusive=false}
@@ -57,8 +60,8 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController) {
                 }
             )
         }
-        composable < AuthRouts.ForgetPasswordRout>{
-            ForgetPasswordScreen{
+        composable<AuthRouts.ForgetPasswordRout> {
+            ForgetPasswordScreen {
                 navController.popBackStack()
             }
         }
@@ -94,7 +97,7 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
                 }
             )
         }
-        composable < MainRouts.AddChatScreen>{
+        composable<MainRouts.AddChatScreen> {
             AddChatScreen(
                 onUserClick = { chatId, otherUserId, otherUserName ->
                     navController.navigate(MainRouts.ChatDetailScreen(chatId, otherUserId, otherUserName))
@@ -111,6 +114,9 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
                     navController.popBackStack()
                 }
             )
+        }
+        composable<MainRouts.CallRout> {
+            CallScreen()
         }
     }
 }

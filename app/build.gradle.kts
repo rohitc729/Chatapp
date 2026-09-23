@@ -75,7 +75,13 @@ dependencies {
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.storage)
     implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.functions)
     implementation(libs.ktor.client.android)
+    //webrtc
+    implementation(libs.webrtc)
+    //coil
+    implementation("io.coil-kt.coil3:coil-compose:3.6.3")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.3")
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

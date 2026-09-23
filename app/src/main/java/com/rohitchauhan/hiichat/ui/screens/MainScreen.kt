@@ -2,6 +2,7 @@ package com.rohitchauhan.hiichat.ui.screens
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.rohitchauhan.hiichat.R
 import androidx.navigation.NavHostController
 import com.rohitchauhan.hiichat.ui.navigation.MainRouts
@@ -76,12 +78,14 @@ fun MainScreen(
                     gotoAddChatScreen()
                 },
                 shape = CircleShape,
-                contentColor = Color(0xFF001AFF)
+                containerColor = Color(0xFF2196F3),
+                modifier = Modifier.padding(end = 8.dp)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.add),
                     contentDescription = "add icon",
-                    tint = Color.White
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }

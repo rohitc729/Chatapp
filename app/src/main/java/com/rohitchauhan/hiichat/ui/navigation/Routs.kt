@@ -30,6 +30,9 @@ sealed class MainRouts{
         val otherUserId: String,
         val otherUserName: String
     ): MainRouts()
+    @Serializable
+    object CallRout: MainRouts()
+
 }
 @Serializable
 sealed class SubRouts(val rout:String){

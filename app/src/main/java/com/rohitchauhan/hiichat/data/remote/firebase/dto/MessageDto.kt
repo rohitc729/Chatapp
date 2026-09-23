@@ -1,5 +1,8 @@
 package com.rohitchauhan.hiichat.data.remote.firebase.dto
 
+import com.google.firebase.database.PropertyName
+
+
 data class MessageDto(
     val messageId:String="",
     val chatId:String="",
@@ -8,5 +11,7 @@ data class MessageDto(
     val messageText:String="",
     val messageType:String="text",
     val timeStamp:Long= System.currentTimeMillis(),
-    val isRead: Boolean=false
+    @get:PropertyName("isRead")
+    @set:PropertyName("isRead")
+    var isRead: Boolean=false
 )

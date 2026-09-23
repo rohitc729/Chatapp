@@ -1,8 +1,14 @@
 package com.rohitchauhan.hiichat.ui.screens
 
+import android.graphics.Paint
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsEndWidth
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -25,6 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -60,6 +68,12 @@ import com.rohitchauhan.hiichat.ui.viewmodel.SignupEvent
 import com.rohitchauhan.hiichat.ui.viewmodel.SignupScreenVM
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import coil3.compose.AsyncImage
+import com.rohitchauhan.hiichat.components.MyTextField
+import com.rohitchauhan.hiichat.ui.theme.appFont
 
 @Composable
 fun SignupScreen(
@@ -73,7 +87,10 @@ fun SignupScreen(
     val credentialManager = CredentialManager.create(context)
 
     var isLoading by rememberSaveable { mutableStateOf(false) }
-
+    var selectedImageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val imageLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia()){uri->
+        selectedImageUri = uri
+    }
 
     LaunchedEffect(Unit) {
         viewModel.signupEvent.collect { signUpEvent ->
@@ -141,42 +158,73 @@ fun SignupScreen(
                 .padding(top = 56.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(R.drawable.appimage),
-                contentDescription = "app logo",
-                modifier = Modifier.size(50.dp)
-            )
             Text(
                 "Sign up",
                 fontSize = 28.sp,
                 textAlign = TextAlign.Center,
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = appFont,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 16.dp)
             )
-            Text("Create your HiiChat account", color = Color.Gray)
+            Text("Create your HiiChat account", color = Color.Gray, fontFamily =appFont)
+             Box(
+                 modifier = Modifier.size(65.dp)
+                     .background(
+                         color=Color.LightGray,
+                         shape = CircleShape
+                     ),
+                 contentAlignment = Alignment.BottomEnd
+             ){
+                 AsyncImage(
+                     model = selectedImageUri,
+                     contentDescription = "profileimg",
+                     modifier = Modifier.fillMaxSize()
+                         .clip(CircleShape).padding(
+                             if(selectedImageUri==null) 4.dp else 0.dp
+                         )
+                     ,
+                     placeholder = painterResource(R.drawable.user_selected),
+                     fallback = painterResource(R.drawable.user_selected),
+                     contentScale = if(selectedImageUri!=null) ContentScale.Crop else ContentScale.Fit
+                 )
+                 IconButton(
+                     onClick = {
+                         imageLauncher.launch(
+                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                         )
+                     },
+                     modifier = Modifier.size(18.dp),
+                     colors = IconButtonDefaults.iconButtonColors(
+                         containerColor = Color(0xFF3A4EFB)
+                     )
+                 ) {
+                     Icon(painter = painterResource(R.drawable.add), contentDescription = "Add image", tint = Color.White,modifier=Modifier.size(12.dp))
+                 }
+             }
             //Name text field
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp)
             ) {
-                Text("Name*")
+                Text("Name*", fontFamily =appFont)
                 Card(
                     elevation = CardDefaults.cardElevation(1.dp)
                 ) {
-                    TextField(
-                        value = signUpstate.name,
-                        onValueChange = { viewModel.onNameChanged(it) },
+                    MyTextField(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
+                        value = signUpstate.name,
+                        onValueChange = {
+                            viewModel.onNameChanged(it      )
+                        },
+                        placeHolder = "Name",
+                        shape = RoundedCornerShape(12.dp),
+                        containerColor = Color.White,
                         singleLine = true,
-                        placeholder = { Text("Name") }
+                        maxLine = 1,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                            keyboardType = KeyboardType.Text
+                        )
                     )
                 }
             }
@@ -186,23 +234,23 @@ fun SignupScreen(
                     .fillMaxWidth()
                     .padding(top = 12.dp)
             ) {
-                Text("Email*")
+                Text("Email*", fontFamily = appFont)
                 Card(
                     elevation = CardDefaults.cardElevation(1.dp)
                 ) {
-                    TextField(
-                        value = signUpstate.email,
-                        onValueChange = { viewModel.onEmailTextChanged(it) },
+                    MyTextField(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
+                        value = signUpstate.email,
+                        onValueChange = {
+                            viewModel.onEmailTextChanged(it   )
+                        },
+                        placeHolder = "Email",
+                        shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        placeholder = { Text("Email") }
+                        maxLine = 1,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email
+                        )
                     )
                 }
             }
@@ -211,31 +259,32 @@ fun SignupScreen(
                     .fillMaxWidth()
                     .padding(vertical = 12.dp)
             ) {
-                Text("Password*")
+                Text("Password*", fontFamily = appFont)
                 Card(
                     elevation = CardDefaults.cardElevation(1.dp)
                 ) {
-                    TextField(
-                        value = signUpstate.password,
-                        onValueChange = { viewModel.onPasswordTextChanged(it) },
+                    MyTextField(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
+                        value = signUpstate.password,
+                        onValueChange = {
+                            viewModel.onPasswordTextChanged(it      )
+                        },
+                        placeHolder = "Password",
+                        shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        placeholder = { Text("Password") },
+                        maxLine = 1,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password
+                        ),
                         trailingIcon = {
                             IconButton(
-                                onClick = {viewModel.isPasswordVisible=!viewModel.isPasswordVisible}
+                                onClick = {
+                                    viewModel.isPasswordVisible=!viewModel.isPasswordVisible
+                                }
                             ) {
                                 Icon(painter = painterResource(viewModel.passwordTrailingIcon), contentDescription = "password trailing icon")
                             }
-                        },
-                        visualTransformation = viewModel.passwordVisualTransformation
+                        }
                     )
                 }
             }
@@ -258,7 +307,7 @@ fun SignupScreen(
                         modifier = Modifier.size(36.dp)
                     )
                 }else{
-                Text("Sign up")
+                Text("Sign up", fontFamily = appFont)
                 }
             }
             //or text
@@ -269,7 +318,7 @@ fun SignupScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f))
-                Text("or")
+                Text("or", fontFamily = appFont)
                 HorizontalDivider(modifier = Modifier.weight(1f))
             }
             //continue with Google button
@@ -328,6 +377,7 @@ fun SignupScreen(
                             .padding(start = 12.dp),
                         color = Color.Black,
                         textAlign = TextAlign.Center
+                        , fontFamily = appFont
                     )
                 }
             }
@@ -339,10 +389,10 @@ fun SignupScreen(
                     .padding(bottom = 32.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Text("Already have an account?")
+                Text("Already have an account?", fontFamily = appFont)
                 Text(" Sign in", color = Color(0xFF3A4EFB), modifier = Modifier.clickable {
                     gotoSignInScreen()
-                })
+                }, fontFamily = appFont)
             }
         }
     }

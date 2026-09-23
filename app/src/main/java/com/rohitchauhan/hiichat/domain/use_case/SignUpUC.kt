@@ -16,7 +16,7 @@ class SignUpUC @Inject constructor(
         if(email.isBlank() || password.isBlank() || name.isBlank()){
             throw Exception("Please fill all the fields")
         }else if(password.length<6){
-            throw Exception("Password must be 6 character")
+            throw PasswordException()
         }
         else {
             firebaseRepo.signUp(
@@ -29,3 +29,5 @@ class SignUpUC @Inject constructor(
         }
     }
 }
+
+class PasswordException: Exception("Password must be 6 character")
