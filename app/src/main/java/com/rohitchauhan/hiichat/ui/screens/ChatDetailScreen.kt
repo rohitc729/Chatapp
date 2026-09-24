@@ -1,5 +1,11 @@
 package com.rohitchauhan.hiichat.ui.screens
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import com.rohitchauhan.hiichat.ui.viewmodel.ChatEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,9 +20,11 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,9 +41,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.rohitchauhan.hiichat.R
+import com.rohitchauhan.hiichat.components.AttachmentMenu
 import com.rohitchauhan.hiichat.components.MessageBubble
 import com.rohitchauhan.hiichat.components.MyTextField
 import com.rohitchauhan.hiichat.ui.viewmodel.ChatDetailScreenVM
+import com.rohitchauhan.hiichat.utils.ChatAttachmentItems
 import com.rohitchauhan.hiichat.utils.getRandomColor
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,7 +67,24 @@ fun ChatDetailScreen(
 
     var showMoreCallMenu by rememberSaveable { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val listState = rememberLazyListState()
+    var showAttachmentMenu by rememberSaveable { mutableStateOf(false) }
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let {
+            viewModel.sendImageMessage(context, chatId, otherUserId, it)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.chatEvent.collect { event ->
+            when (event) {
+                is ChatEvent.ShowError -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     LaunchedEffect(chatId) {
         viewModel.getMessages(chatId)
@@ -213,6 +240,28 @@ fun ChatDetailScreen(
                     }
                 }
             }
+            AnimatedVisibility(
+                visible = showAttachmentMenu,
+                enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
+                exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom)
+            ) {
+                AttachmentMenu(
+                    onOptionClick = { option ->
+                        showAttachmentMenu = false
+                        when (option) {
+                            ChatAttachmentItems.DOCUMENT -> {}
+                            ChatAttachmentItems.CAMERA -> {}
+                            ChatAttachmentItems.GALLERY -> {
+                                galleryLauncher.launch(PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            }
+                            ChatAttachmentItems.AUDIO -> {}
+                            ChatAttachmentItems.LOCATION -> {}
+                            ChatAttachmentItems.CONTACT -> {}
+                        }
+                    }
+                )
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -244,7 +293,7 @@ fun ChatDetailScreen(
                             maxLine = 12
                         )
                         Row(verticalAlignment = Alignment.Bottom) {
-                            IconButton(onClick = { /* Handle attachment */ }) {
+                            IconButton(onClick = { showAttachmentMenu=!showAttachmentMenu }) {
                                 Icon(
                                     imageVector = Icons.Default.AttachFile,
                                     contentDescription = "attachment",

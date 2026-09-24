@@ -267,12 +267,14 @@ class FirebaseService @Inject constructor(
         val messageId = firebaseDatabase.reference.child("messages").child(chatId).push().key ?: return
         val finalMessage = message.copy(messageId = messageId)
 
+        val lastMessageDisplay = if (finalMessage.messageType == "image") "📷 Image" else finalMessage.messageText
+
         val updates = hashMapOf<String, Any>()
         // 1. Add message to history
         updates["/messages/$chatId/$messageId"] = finalMessage
         
         // 2. Update chat metadata
-        updates["/chats/$chatId/lastMessage"] = finalMessage.messageText
+        updates["/chats/$chatId/lastMessage"] = lastMessageDisplay
         updates["/chats/$chatId/lastMessageSenderId"] = finalMessage.senderId
         updates["/chats/$chatId/lastTimestamp"] = finalMessage.timeStamp
         updates["/chats/$chatId/chatId"] = chatId
@@ -328,10 +330,11 @@ class FirebaseService @Inject constructor(
                     val senderSnapshot = firebaseDatabase.reference.child("users").child(message.senderId).get().await()
                     val sender = senderSnapshot.getValue(UserDto::class.java)
                     
+                    val notificationBody = if (message.messageType == "image") "📷 Image" else message.messageText
                     val request = NotificationRequest(
                         token = token,
                         title = sender?.name ?: "New Message",
-                        body = message.messageText
+                        body = notificationBody
                     )
                     
                     supabaseClient.functions.invoke("notify-user", request)

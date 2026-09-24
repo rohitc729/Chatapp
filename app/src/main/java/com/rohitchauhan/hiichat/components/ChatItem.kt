@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.rohitchauhan.hiichat.R
 import com.rohitchauhan.hiichat.utils.formatTime
 
@@ -41,25 +43,23 @@ fun ChatListItem(
         verticalAlignment = Alignment.CenterVertically,
 
     ) {
-       if(profileImage.isEmpty()){
-           Card(
-               modifier = Modifier.size(52.dp),
-               shape = CircleShape,
-           ) {
-               Image(
-                   painter = painterResource(R.drawable.user_unselected),
-                   contentDescription = "avatar",
-                   modifier = Modifier.fillMaxSize()
-                       .padding(4.dp),
-                   contentScale = ContentScale.Crop
-               )
-           }
-       }else{
-
-       }
+        AsyncImage(
+            model = profileImage,
+            contentDescription = "profileimage",
+            modifier = Modifier
+                .padding(
+                    if (profileImage.isEmpty()) 4.dp else 0.dp
+                )
+                .size(50.dp)
+                .clip(CircleShape),
+            placeholder = painterResource(id = R.drawable.user_unselected),
+            fallback = painterResource(id = R.drawable.user_unselected),
+            error = painterResource(id = R.drawable.user_unselected),
+            contentScale = ContentScale.Crop
+        )
 
         Column(
-            modifier = Modifier.padding(start = 8.dp)
+            modifier = Modifier.padding(start = 12.dp)
                 .weight(1f)
         ) {
             Text(name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)

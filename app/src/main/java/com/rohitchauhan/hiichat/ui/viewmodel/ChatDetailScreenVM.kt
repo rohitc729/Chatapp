@@ -1,9 +1,12 @@
 package com.rohitchauhan.hiichat.ui.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rohitchauhan.hiichat.data.remote.firebase.FirebaseService
 import com.rohitchauhan.hiichat.data.remote.firebase.dto.MessageDto
+import com.rohitchauhan.hiichat.data.remote.supabase.SupabaseService
 import com.rohitchauhan.hiichat.domain.use_case.GetMessagesUC
 import com.rohitchauhan.hiichat.domain.use_case.MarkMessagesAsReadUC
 import com.rohitchauhan.hiichat.domain.use_case.SendMessageUC
@@ -21,7 +24,8 @@ class ChatDetailScreenVM @Inject constructor(
     private val getMessagesUC: GetMessagesUC,
     private val sendMessageUC: SendMessageUC,
     private val markMessagesAsReadUC: MarkMessagesAsReadUC,
-    private val firebaseService: FirebaseService
+    private val firebaseService: FirebaseService,
+    private val supabaseService: SupabaseService
 ) : ViewModel() {
 
     private val _messagesState = MutableStateFlow<List<MessageDto>>(emptyList())
@@ -57,6 +61,7 @@ class ChatDetailScreenVM @Inject constructor(
             senderId = senderId,
             receiverId = receiverId,
             messageText = text,
+            messageType = "text",
             timeStamp = System.currentTimeMillis()
         )
 
@@ -71,6 +76,73 @@ class ChatDetailScreenVM @Inject constructor(
                 }
             }
         )
+    }
+
+    fun sendImageMessage(
+        context: Context,
+        chatId: String,
+        receiverId: String,
+        imageUri: Uri
+    ) {
+        val senderId = firebaseService.getCurrentUid() ?: return
+        val tempMessageId = "temp_${System.currentTimeMillis()}"
+
+        // Optimistic UI update: local preview immediately
+        val tempMessage = MessageDto(
+            messageId = tempMessageId,
+            chatId = chatId,
+            senderId = senderId,
+            receiverId = receiverId,
+            messageText = imageUri.toString(),
+            messageType = "image",
+            timeStamp = System.currentTimeMillis()
+        )
+
+        _messagesState.value = listOf(tempMessage) + _messagesState.value
+
+        viewModelScope.launch {
+            try {
+                // 1. Compress & Upload to Supabase Storage (using profile-images bucket)
+                val path = "chats/img_${System.currentTimeMillis()}.jpeg"
+                val publicUrl = supabaseService.uploadImage(
+                    context = context,
+                    uri = imageUri,
+                    bucketName = "profile-images",
+                    path = path
+                )
+
+                // 2. Final Message with public URL
+                val finalMessage = MessageDto(
+                    chatId = chatId,
+                    senderId = senderId,
+                    receiverId = receiverId,
+                    messageText = publicUrl,
+                    messageType = "image",
+                    timeStamp = System.currentTimeMillis()
+                )
+
+                // 3. Save message to Firebase Realtime Database
+                sendMessageUC(
+                    message = finalMessage,
+                    onSuccess = {
+                        // Realtime DB sync will update the message list automatically
+                    },
+                    onFailure = { e ->
+                        // Remove optimistic temp message on failure
+                        _messagesState.value = _messagesState.value.filter { it.messageId != tempMessageId }
+                        viewModelScope.launch {
+                            _chatEvent.emit(ChatEvent.ShowError(e.message.toString()))
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                // Remove optimistic temp message on upload failure
+                _messagesState.value = _messagesState.value.filter { it.messageId != tempMessageId }
+                viewModelScope.launch {
+                    _chatEvent.emit(ChatEvent.ShowError(e.message ?: "Failed to upload image"))
+                }
+            }
+        }
     }
 }
 
