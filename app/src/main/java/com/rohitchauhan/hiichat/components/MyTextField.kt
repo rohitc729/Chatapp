@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
@@ -45,13 +46,14 @@ fun MyTextField(
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     onLeadingIconClick: () -> Unit = {},
-    shape: RoundedCornerShape,
-    containerColor: Color=Color.White,
+    shape: RoundedCornerShape=  RoundedCornerShape(12.dp),
+    containerColor: Color = Color.White,
     singleLine: Boolean = true,
     maxLine: Int = Int.MAX_VALUE,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     isError: Boolean = false,
-    visualTransformation: VisualTransformation = VisualTransformation.None
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    fontFamily: FontFamily = appFont
 ) {
     BasicTextField(
         value = value,
@@ -59,7 +61,7 @@ fun MyTextField(
             onValueChange(it)
         },
         modifier = modifier.heightIn(min = 48.dp),
-        textStyle = TextStyle(fontSize = 14.sp, fontFamily = appFont),
+        textStyle = TextStyle(fontSize = 14.sp, fontFamily = fontFamily),
         singleLine = singleLine,
         maxLines = maxLine,
         keyboardOptions = keyboardOptions,
@@ -72,13 +74,19 @@ fun MyTextField(
                 singleLine = singleLine,
                 visualTransformation = visualTransformation,
                 interactionSource = remember { MutableInteractionSource() },
-                placeholder = { Text(placeHolder, fontSize = 14.sp) },
+                placeholder = {
+                    Text(
+                        text = placeHolder,
+                        fontSize = 14.sp,
+                        fontFamily = fontFamily
+                    )
+                },
                 leadingIcon = leadingIcon,
                 trailingIcon = trailingIcon,
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 isError = isError,
+                shape = shape,
                 container = {
-                    // This creates the background box you see in a normal TextField
                     TextFieldDefaults.ContainerBox(
                         enabled = true,
                         isError = isError,

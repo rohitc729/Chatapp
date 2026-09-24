@@ -257,6 +257,20 @@ class FirebaseService @Inject constructor(
         awaitClose { userRef.removeEventListener(listener) }
     }
 
+    fun toggleReaction(chatId: String, messageId: String, emoji: String) {
+        val uid = getCurrentUid() ?: return
+        val reactionRef = firebaseDatabase.reference.child("messages").child(chatId).child(messageId).child("reactions").child(uid)
+        
+        reactionRef.get().addOnSuccessListener { snapshot ->
+            val currentEmoji = snapshot.getValue(String::class.java)
+            if (currentEmoji == emoji) {
+                reactionRef.removeValue()
+            } else {
+                reactionRef.setValue(emoji)
+            }
+        }
+    }
+
     //send a message to a user
     fun sendMessage(
         message: MessageDto,

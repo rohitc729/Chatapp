@@ -62,6 +62,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.rohitchauhan.hiichat.R
+import com.rohitchauhan.hiichat.components.MyTextField
+import com.rohitchauhan.hiichat.ui.theme.appFont
 import com.rohitchauhan.hiichat.ui.viewmodel.SignInEvent
 import com.rohitchauhan.hiichat.ui.viewmodel.SignInScreenVM
 import kotlinx.coroutines.launch
@@ -156,14 +158,14 @@ fun SignInScreen(
                 "Sign in",
                 fontSize = 28.sp,
                 textAlign = TextAlign.Center,
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = appFont,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 16.dp)
             )
             Text(
                 "Sign in to connect to your friends\nwith HiiChat \uFE0F",
                 textAlign = TextAlign.Center,
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = appFont,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(top = 8.dp),
                 color = Color.DarkGray
@@ -180,34 +182,29 @@ fun SignInScreen(
                         .fillMaxWidth()
                         .padding(bottom = 8.dp, top = 16.dp),
                     fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp
+                    fontSize = 16.sp,
+                    fontFamily = appFont
                 )
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     elevation = CardDefaults.cardElevation(2.dp)
                 ) {
-                    TextField(
+                    MyTextField(
+                        modifier = Modifier.fillMaxWidth(),
                         value = signInState.email,
                         onValueChange = {
                             viewModel.onEmailTextChanged(it)
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-//                        cursorColor = Color(0xFF3A4EFB)
+                        placeHolder = "Email",
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        maxLine = 1,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email
                         ),
-                        placeholder = { Text("Email") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         leadingIcon = {
-                            Icon(
-                                painter = painterResource(R.drawable.baseline_email_24),
-                                contentDescription = "email leading icon"
-                            )
-                        },
-                        singleLine = true
+                            Icon(painter = painterResource(R.drawable.baseline_email_24), contentDescription = "email leading icon")
+                        }
                     )
                 }
             }
@@ -221,26 +218,26 @@ fun SignInScreen(
                         .fillMaxWidth()
                         .padding(bottom = 8.dp, top = 16.dp),
                     fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp
+                    fontSize = 16.sp,
+                    fontFamily = appFont
                 )
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     elevation = CardDefaults.cardElevation(2.dp)
                 ) {
-                    TextField(
+                    MyTextField(
+                        modifier = Modifier.fillMaxWidth(),
                         value = signInState.password,
                         onValueChange = {
                             viewModel.onPasswordTextChanged(it)
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-//                        cursorColor = Color(0xFF3A4EFB)
+                        placeHolder = "Password",
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        maxLine = 1,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password
                         ),
-                        placeholder = { Text("Password") },
                         trailingIcon = {
                             IconButton(
                                 onClick = {
@@ -249,18 +246,14 @@ fun SignInScreen(
                             ) {
                                 Icon(
                                     painter = painterResource(viewModel.passwordTrailingIcon),
-                                    contentDescription = "password visibility"
+                                    contentDescription = "password trailing icon"
                                 )
                             }
                         },
                         leadingIcon = {
-                            Icon(
-                                painter = painterResource(R.drawable.baseline_password_24),
-                                contentDescription = "password leading icon"
-                            )
+                            Icon(painter = painterResource(R.drawable.baseline_password_24), contentDescription = "password leading icon")
                         },
-                        visualTransformation = viewModel.passwordVisualTransformation,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                        visualTransformation = viewModel.passwordVisualTransformation
                     )
                 }
             }
@@ -273,7 +266,8 @@ fun SignInScreen(
                         .clickable {
                             gotoForgetPasswordScreen()
                         },
-                    color = Color(0xFF3A4EFB)
+                    color = Color(0xFF3A4EFB),
+                    fontFamily = appFont
                 )
             }
             //sign in button
@@ -295,7 +289,7 @@ fun SignInScreen(
                         modifier = Modifier.size(36.dp)
                     )
                 } else {
-                    Text("Sign in")
+                    Text("Sign in", fontFamily = appFont)
                 }
             }
             //or text
@@ -306,7 +300,7 @@ fun SignInScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f))
-                Text("or")
+                Text("or", fontFamily = appFont)
                 HorizontalDivider(modifier = Modifier.weight(1f))
             }
             //continue with Google button
@@ -365,7 +359,8 @@ fun SignInScreen(
                             .weight(1f)
                             .padding(start = 12.dp),
                         color = Color.Black,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        fontFamily = appFont
                     )
                 }
             }
@@ -374,10 +369,11 @@ fun SignInScreen(
             Row(modifier = Modifier.padding(bottom = 32.dp)) {
                 Text(
                     text = "Don't have an account?",
+                    fontFamily = appFont
                 )
                 Text(" Sign up", modifier = Modifier.clickable {
                     gotoSignUpScreen()
-                }, color = Color(0xFF3A4EFB))
+                }, color = Color(0xFF3A4EFB), fontFamily = appFont)
             }
         }
     }

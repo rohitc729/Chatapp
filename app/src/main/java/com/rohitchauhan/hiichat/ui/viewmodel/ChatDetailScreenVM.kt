@@ -52,7 +52,17 @@ class ChatDetailScreenVM @Inject constructor(
         markMessagesAsReadUC(chatId)
     }
 
-    fun sendMessage(chatId: String, receiverId: String, text: String) {
+    fun toggleReaction(chatId: String, messageId: String, emoji: String) {
+        firebaseService.toggleReaction(chatId, messageId, emoji)
+    }
+
+    fun sendMessage(
+        chatId: String,
+        receiverId: String,
+        text: String,
+        replyToMessage: MessageDto? = null,
+        replySenderName: String? = null
+    ) {
         if (text.isBlank()) return
         
         val senderId = firebaseService.getCurrentUid() ?: return
@@ -62,6 +72,10 @@ class ChatDetailScreenVM @Inject constructor(
             receiverId = receiverId,
             messageText = text,
             messageType = "text",
+            replyToMessageId = replyToMessage?.messageId,
+            replyToMessageText = if (replyToMessage?.messageType == "image") "📷 Image" else replyToMessage?.messageText,
+            replyToSenderName = replySenderName,
+            replyToMessageType = replyToMessage?.messageType,
             timeStamp = System.currentTimeMillis()
         )
 
