@@ -19,6 +19,7 @@ sealed class AuthRouts{
     @Serializable
     object ForgetPasswordRout: AuthRouts()
 }
+
 sealed class MainRouts{
     @Serializable
     object MainScreen: MainRouts()
@@ -33,15 +34,22 @@ sealed class MainRouts{
     ): MainRouts()
     @Serializable
     object CallRout: MainRouts()
-
+    @Serializable
+    data class CallingScreen(
+        val chatId: String,
+        val callerId: String,
+        val receiverId: String,
+        val callerName: String,
+        val isVideoCall: Boolean
+    ): MainRouts()
 }
+
 @Serializable
 sealed class SubRouts(val rout:String){
     @Serializable
     object ChatListRout: SubRouts("chat_list_rout")
- @Serializable
+    @Serializable
     object CallRout: SubRouts("call_list_rout")
- @Serializable
+    @Serializable
     object ProfileRout: SubRouts("profile_rout")
-
 }

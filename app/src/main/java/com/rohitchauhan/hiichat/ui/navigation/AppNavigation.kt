@@ -1,6 +1,8 @@
 package com.rohitchauhan.hiichat.ui.navigation
 
+import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -8,21 +10,48 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
+import com.google.firebase.auth.FirebaseAuth
+import com.rohitchauhan.hiichat.ui.screens.AddChatScreen
+import com.rohitchauhan.hiichat.ui.screens.CallScreen
+import com.rohitchauhan.hiichat.ui.screens.ChatDetailScreen
 import com.rohitchauhan.hiichat.ui.screens.ForgetPasswordScreen
 import com.rohitchauhan.hiichat.ui.screens.MainScreen
 import com.rohitchauhan.hiichat.ui.screens.SignInScreen
 import com.rohitchauhan.hiichat.ui.screens.SignupScreen
 import com.rohitchauhan.hiichat.ui.screens.SplashScreen
-import com.rohitchauhan.hiichat.ui.screens.AddChatScreen
-import com.rohitchauhan.hiichat.ui.screens.ChatDetailScreen
 import com.rohitchauhan.hiichat.ui.viewmodel.SplashScreenVM
 import androidx.navigation.toRoute
-import com.rohitchauhan.hiichat.ui.screens.CallScreen
-
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    callIntent: Intent? = null
+) {
     val navController = rememberNavController()
+
+    // Handle notification intent actions (ACCEPT_CALL)
+    LaunchedEffect(callIntent) {
+        val action = callIntent?.getStringExtra("action")
+        if (action == "ACCEPT_CALL") {
+            val chatId = callIntent.getStringExtra("chatId") ?: ""
+            val callerId = callIntent.getStringExtra("callerId") ?: ""
+            val callerName = callIntent.getStringExtra("callerName") ?: "Incoming Call"
+            val isVideoCall = callIntent.getBooleanExtra("isVideoCall", true)
+            val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+
+            if (chatId.isNotBlank()) {
+                navController.navigate(
+                    MainRouts.CallingScreen(
+                        chatId = chatId,
+                        callerId = callerId,
+                        receiverId = currentUid,
+                        callerName = callerName,
+                        isVideoCall = isVideoCall
+                    )
+                )
+            }
+        }
+    }
+
     NavHost(navController = navController, startDestination = RootGraph.AuthGraph) {
         authGraph(navController)
         mainGraph(navController)
@@ -120,11 +149,33 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
                 otherUserImage = chatDetail.otherUserImage,
                 onBackClick = {
                     navController.popBackStack()
+                },
+                onCallClick = { isVideoCall ->
+                    val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                    navController.navigate(
+                        MainRouts.CallingScreen(
+                            chatId = chatDetail.chatId,
+                            callerId = currentUid,
+                            receiverId = chatDetail.otherUserId,
+                            callerName = chatDetail.otherUserName,
+                            isVideoCall = isVideoCall
+                        )
+                    )
                 }
             )
         }
-        composable<MainRouts.CallRout> {
-            CallScreen()
+        composable<MainRouts.CallingScreen> { backStackEntry ->
+            val callArgs: MainRouts.CallingScreen = backStackEntry.toRoute()
+            CallScreen(
+                chatId = callArgs.chatId,
+                callerId = callArgs.callerId,
+                receiverId = callArgs.receiverId,
+                callerName = callArgs.callerName,
+                isVideoCall = callArgs.isVideoCall,
+                onCallEnded = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

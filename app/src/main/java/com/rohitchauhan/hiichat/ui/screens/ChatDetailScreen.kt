@@ -70,7 +70,8 @@ fun ChatDetailScreen(
     otherUserId: String,
     otherUserName: String,
     onBackClick: () -> Unit,
-    otherUserImage: String
+    otherUserImage: String,
+    onCallClick: (isVideoCall: Boolean) -> Unit = {}
 ) {
     val viewModel: ChatDetailScreenVM = hiltViewModel()
     val messages by viewModel.messagesState.collectAsState()
@@ -182,7 +183,10 @@ fun ChatDetailScreen(
                     ) {
                         DropdownMenuItem(
                             text = { Text("Audio call") },
-                            onClick = {},
+                            onClick = {
+                                showMoreCallMenu = false
+                                onCallClick(false)
+                            },
                             leadingIcon = {
                                 Icon(
                                     painterResource(R.drawable.call_selected),
@@ -192,7 +196,10 @@ fun ChatDetailScreen(
                         )
                         DropdownMenuItem(
                             text = { Text("Video call") },
-                            onClick = {},
+                            onClick = {
+                                showMoreCallMenu = false
+                                onCallClick(true)
+                            },
                             leadingIcon = {
                                 Icon(
                                     painterResource(R.drawable.videocall),
